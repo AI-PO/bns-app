@@ -23,6 +23,7 @@ import {
   isDomainAvailableOnMarketplace,
 } from "@/app/actions/domains";
 import { cn } from "@/lib/utils";
+import { useWalletContext } from "@/providers/walletContext";
 
 type CheckState =
   | { kind: "idle" }
@@ -50,8 +51,11 @@ export type DomainCheckerHandle = {
   setValue: (value: string) => void;
 };
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
   const router = useRouter();
+  const { isConnected } = useWalletContext();
   const [raw, setRaw] = useState("");
   const [state, setState] = useState<CheckState>({ kind: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,22 +70,13 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
 
   const runCheck = useCallback(async (value: string) => {
     const clean = normalize(value);
-    if (!clean) {
-      setState({ kind: "idle" });
-      return;
-    }
+    if (!clean) { setState({ kind: "idle" }); return; }
     const invalid = validate(clean);
-    if (invalid) {
-      setState({ kind: "invalid", reason: invalid });
-      return;
-    }
+    if (invalid) { setState({ kind: "invalid", reason: invalid }); return; }
     setState({ kind: "checking" });
     try {
       const available = await isDomainAvailable(clean);
-      if (available) {
-        setState({ kind: "available" });
-        return;
-      }
+      if (available) { setState({ kind: "available" }); return; }
       const contractId = await isDomainAvailableOnMarketplace(clean);
       setState({ kind: "taken", marketplaceContractId: contractId });
     } catch {
@@ -91,15 +86,12 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
 
   useDebounce(() => void runCheck(raw), 300, [raw]);
 
-  // Cycling typewriter placeholder (only when empty + not focused)
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
   const [isFocused, setIsFocused] = useState(false);
   useEffect(() => {
     if (raw || isFocused) return;
     let cancelled = false;
     let idx = 0;
-    let typed = PLACEHOLDERS[0];
-
     const tick = async () => {
       while (!cancelled) {
         await wait(2200);
@@ -107,39 +99,42 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
         const current = PLACEHOLDERS[idx];
         for (let i = current.length; i >= 0; i--) {
           if (cancelled) return;
-          typed = current.slice(0, i);
-          setPlaceholder(typed);
+          setPlaceholder(current.slice(0, i));
           await wait(40);
         }
         idx = (idx + 1) % PLACEHOLDERS.length;
         const next = PLACEHOLDERS[idx];
         for (let i = 1; i <= next.length; i++) {
           if (cancelled) return;
-          typed = next.slice(0, i);
-          setPlaceholder(typed);
+          setPlaceholder(next.slice(0, i));
           await wait(70);
         }
       }
     };
     void tick();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [raw, isFocused]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // void runCheck(raw);
+    const clean = normalize(raw);
     if (state.kind === "available") {
-      router.push(`/register/${normalize(raw)}.btc`);
+      if (isConnected) {
+        router.push(`/register/${clean}.btc`);
+      } else {
+        // Trigger wallet connect — scroll to connect widget
+        const connectBtn = document.querySelector<HTMLButtonElement>("[data-connect-wallet]");
+        connectBtn?.click();
+      }
     } else if (state.kind === "taken" && state.marketplaceContractId) {
+      router.push(`/marketplace/${state.marketplaceContractId}`);
+    } else if (state.kind === "taken") {
       router.push("/marketplace");
     }
   };
 
   const clean = normalize(raw);
   const fullName = clean ? `${clean}.btc` : "";
-
   const isAvailable = state.kind === "available";
   const isError = state.kind === "invalid";
 
@@ -154,11 +149,7 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
   );
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="w-full"
-      aria-label="Check a .btc name"
-    >
+    <form onSubmit={onSubmit} className="w-full" aria-label="Check a .btc name">
       <div className={wrapClass}>
         <span className="hidden sm:flex items-center pl-5 text-bn-accent">
           <CurrencyBtc weight="bold" size={20} />
@@ -190,85 +181,62 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
           {state.kind === "checking" ? (
             <CircleNotch weight="bold" size={16} className="animate-spin" />
           ) : isAvailable ? (
-            <>
-              Claim
-              <ArrowRight weight="bold" size={14} />
-            </>
+            <>{isConnected ? "Buy" : "Connect to Buy"} <ArrowRight weight="bold" size={14} /></>
           ) : (
-            <>
-              Check
-              <ArrowRight weight="bold" size={14} />
-            </>
+            <>Check <ArrowRight weight="bold" size={14} /></>
           )}
         </button>
       </div>
-
-      <Status state={state} fullName={fullName} />
+      <Status state={state} fullName={fullName} isConnected={isConnected} />
     </form>
   );
 });
 
 DomainChecker.displayName = "DomainChecker";
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 const Status = ({
-  state,
-  fullName,
+  state, fullName, isConnected,
 }: {
-  state: CheckState;
-  fullName: string;
+  state: CheckState; fullName: string; isConnected: boolean;
 }) => {
   if (state.kind === "idle") {
-    return (
-      <p className="mt-3 text-[13px] text-bn-ink-muted min-h-[20px] pl-1">
-        3–63 characters · letters, numbers, hyphens
-      </p>
-    );
+    return <p className="mt-3 text-[13px] text-bn-ink-muted min-h-[20px] pl-1">3–63 characters · letters, numbers, hyphens</p>;
   }
-
   if (state.kind === "invalid") {
     return (
       <p className="mt-3 text-[13px] text-bn-danger flex items-center gap-2 min-h-[20px] pl-1">
-        <WarningCircle weight="fill" size={14} />
-        {state.reason}
+        <WarningCircle weight="fill" size={14} />{state.reason}
       </p>
     );
   }
-
   if (state.kind === "checking") {
     return (
       <p className="mt-3 text-[13px] text-bn-ink-muted flex items-center gap-2 min-h-[20px] pl-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-bn-ink-muted animate-pulse" />
-        Checking on Bitcoin...
+        <span className="w-1.5 h-1.5 rounded-full bg-bn-ink-muted animate-pulse" />Checking on Bitcoin...
       </p>
     );
   }
-
   if (state.kind === "available") {
     return (
       <div className="mt-3 flex items-center justify-between gap-3 min-h-[20px] pl-1">
         <span className="text-[13px] text-bn-ink flex items-center gap-2">
-          <span className="relative inline-flex">
-            <span className="w-2 h-2 rounded-full bg-bn-accent bn-pulse-ring" />
-          </span>
+          <span className="relative inline-flex"><span className="w-2 h-2 rounded-full bg-bn-accent bn-pulse-ring" /></span>
           <span className="font-mono-bn text-bn-accent">{fullName}</span>
           <span className="text-bn-ink-muted">is available</span>
         </span>
-        <Link
-          href={`/register/${fullName}`}
-          className="text-[13px] font-medium text-bn-accent hover:text-bn-accent-hover inline-flex items-center gap-1"
-        >
-          Claim it
-          <ArrowRight weight="bold" size={12} />
-        </Link>
+        {isConnected ? (
+          <Link href={`/register/${fullName}`} className="text-[13px] font-medium text-bn-accent hover:text-bn-accent-hover inline-flex items-center gap-1">
+            Buy it <ArrowRight weight="bold" size={12} />
+          </Link>
+        ) : (
+          <span className="text-[13px] text-bn-ink-muted">Connect wallet to buy</span>
+        )}
       </div>
     );
   }
 
   const listingHref = state.marketplaceContractId
-    ? `/marketplace/${state.marketplaceContractId}`
-    : null;
+    ? `/marketplace/${state.marketplaceContractId}` : "/marketplace";
 
   return (
     <div className="mt-3 flex items-center justify-between gap-3 min-h-[20px] pl-1">
@@ -277,15 +245,9 @@ const Status = ({
         <span className="font-mono-bn text-bn-ink-2">{fullName}</span>
         <span>is taken</span>
       </span>
-      {listingHref ? (
-        <Link
-          href={listingHref}
-          className="text-[13px] font-medium text-bn-ink hover:text-bn-accent inline-flex items-center gap-1"
-        >
-          View on marketplace
-          <ArrowRight weight="bold" size={12} />
-        </Link>
-      ) : null}
+      <Link href={listingHref} className="text-[13px] font-medium text-bn-ink hover:text-bn-accent inline-flex items-center gap-1">
+        View on marketplace <ArrowRight weight="bold" size={12} />
+      </Link>
     </div>
   );
 };

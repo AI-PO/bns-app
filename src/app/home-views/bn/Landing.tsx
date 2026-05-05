@@ -9,6 +9,7 @@ import { PremiumNames } from "./PremiumNames/PremiumNames";
 import { ProofRow } from "./ProofRow/ProofRow";
 import { Quantum } from "./Quantum/Quantum";
 
+// App landing: same sections, but CTAs point to /register (Buy) instead of #waitlist
 export const Landing = () => (
   <>
     <StickyNav />
