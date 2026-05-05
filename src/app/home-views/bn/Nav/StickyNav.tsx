@@ -1,14 +1,6 @@
-// src/app/home-views/bn/Nav/StickyNav.tsx
-// Replace existing file. Changes: "Reserve your name" → "Log in" + "Get started" → /login
 "use client";
 
-import {
-  ArrowUpRight,
-  Compass,
-  ShieldCheck,
-  Sparkle,
-  Storefront,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Compass, ShieldCheck, Sparkle, Storefront } from "@phosphor-icons/react/dist/ssr";
 import { AnimatePresence, m, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -55,28 +47,20 @@ export const StickyNav = () => {
           ))}
         </div>
 
-        {/* CTA — Login + Get started */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-[13px] font-medium text-bn-ink-2 hover:text-bn-ink transition-colors">
-            Log in
-          </Link>
+        {/* Single CTA: Log in */}
+        <div className="hidden md:flex items-center">
           <Link href="/login" className="inline-flex items-center bg-bn-ink text-white font-medium text-[13px] px-5 py-2.5 rounded-full hover:bg-black transition-colors">
-            Get started
+            Log in
           </Link>
         </div>
 
         {/* Hamburger */}
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          aria-expanded={open}
-          className="md:hidden relative inline-flex items-center justify-center w-10 h-10 rounded-full text-bn-ink hover:bg-bn-page-2 transition-colors"
-        >
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-label="Toggle navigation"
+          className="md:hidden relative inline-flex items-center justify-center w-10 h-10 rounded-full text-bn-ink hover:bg-bn-page-2 transition-colors">
           <span className="relative block w-5 h-4" aria-hidden>
             <m.span className="absolute left-0 right-0 top-1/2 block h-[2px] -mt-px rounded-full bg-current"
               animate={open ? { y: 0, rotate: 45 } : { y: -6, rotate: 0 }} transition={{ duration: 0.3, ease: EASE }} />
-            <m.span className="absolute left-0 right-0 top-1/2 block h-[2px] -mt-px rounded-full bg-current origin-center"
+            <m.span className="absolute left-0 right-0 top-1/2 block h-[2px] -mt-px rounded-full bg-current"
               animate={open ? { opacity: 0, scaleX: 0.2 } : { opacity: 1, scaleX: 1 }} transition={{ duration: 0.2, ease: EASE }} />
             <m.span className="absolute left-0 right-0 top-1/2 block h-[2px] -mt-px rounded-full bg-current"
               animate={open ? { y: 0, rotate: -45 } : { y: 6, rotate: 0 }} transition={{ duration: 0.3, ease: EASE }} />
@@ -88,9 +72,7 @@ export const StickyNav = () => {
         {open && (
           <>
             <m.div key="scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }} onClick={() => setOpen(false)}
-              className="md:hidden fixed inset-x-0 top-[68px] bottom-0 bg-bn-ink/20 backdrop-blur-sm" aria-hidden />
-
+              onClick={() => setOpen(false)} className="md:hidden fixed inset-x-0 top-[68px] bottom-0 bg-bn-ink/20 backdrop-blur-sm" aria-hidden />
             <m.div key="panel" initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }}
               transition={{ duration: 0.35, ease: EASE }}
               className="md:hidden absolute top-full inset-x-0 bg-bn-page border-t border-bn-line shadow-[0_24px_48px_-24px_rgba(10,10,10,0.25)]">
@@ -104,18 +86,17 @@ export const StickyNav = () => {
                         <Icon size={18} weight="bold" />
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[15px] font-semibold text-bn-ink leading-tight">{l.label}</span>
-                        <span className="block text-[12px] text-bn-ink-muted leading-tight mt-0.5 truncate">{l.desc}</span>
+                        <span className="block text-[15px] font-semibold text-bn-ink">{l.label}</span>
+                        <span className="block text-[12px] text-bn-ink-muted mt-0.5 truncate">{l.desc}</span>
                       </span>
                       <ArrowUpRight size={16} weight="bold" className="text-bn-ink-dim" />
                     </Link>
                   );
                 })}
-
-                <div className="mt-3 pt-4 border-t border-bn-line flex flex-col gap-2">
+                <div className="mt-3 pt-4 border-t border-bn-line">
                   <Link href="/login" onClick={() => setOpen(false)}
-                    className="inline-flex items-center justify-center gap-2 bg-bn-ink text-white font-medium text-[14px] px-5 py-3.5 rounded-full hover:bg-black transition-all">
-                    Log in / Get started
+                    className="flex items-center justify-center bg-bn-ink text-white font-medium text-[14px] px-5 py-3.5 rounded-full hover:bg-black transition-all">
+                    Log in
                   </Link>
                 </div>
               </div>
