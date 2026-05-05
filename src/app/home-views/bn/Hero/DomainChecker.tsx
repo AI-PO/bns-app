@@ -1,29 +1,34 @@
+// src/app/home-views/bn/Hero/DomainChecker.tsx
+// "Check" → "Buy" — redirects to /login if not authed, straight to /register if authed
 "use client";
 
 import {
-  ArrowRight,
-  CircleNotch,
-  CurrencyBtc,
-  WarningCircle,
+  ArrowRight, CircleNotch, CurrencyBtc, WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
+  forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState,
 } from "react";
 import { useDebounce } from "react-use";
 
-import {
-  isDomainAvailable,
-  isDomainAvailableOnMarketplace,
-} from "@/app/actions/domains";
+import { isDomainAvailable, isDomainAvailableOnMarketplace } from "@/app/actions/domains";
 import { cn } from "@/lib/utils";
-import { useWalletContext } from "@/providers/walletContext";
+
+// Check if user is logged in via Supabase session OR demo cookie
+async function isLoggedIn(): Promise<boolean> {
+  // Check demo cookie
+  if (document.cookie.includes("demo_user=true")) return true;
+  // Check Supabase session
+  try {
+    const { createClient } = await import("@/utils/supabase/client");
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    return !!data.session;
+  } catch {
+    return false;
+  }
+}
 
 type CheckState =
   | { kind: "idle" }
@@ -34,38 +39,28 @@ type CheckState =
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/;
 const PLACEHOLDERS = ["yourname", "satoshi", "vault", "miner", "lightning"];
-
-const normalize = (value: string) =>
-  value.toLowerCase().replace(/\.btc$/, "").trim();
-
-const validate = (value: string): string | null => {
-  if (!value) return null;
-  if (value.length < 3) return "Names must be at least 3 characters.";
-  if (value.length > 63) return "Names must be at most 63 characters.";
-  if (!DOMAIN_REGEX.test(value)) return "Use a-z, 0-9, and hyphens only.";
+const normalize = (v: string) => v.toLowerCase().replace(/\.btc$/, "").trim();
+const validate = (v: string): string | null => {
+  if (!v) return null;
+  if (v.length < 3) return "Names must be at least 3 characters.";
+  if (v.length > 63) return "Names must be at most 63 characters.";
+  if (!DOMAIN_REGEX.test(v)) return "Use a-z, 0-9, and hyphens only.";
   return null;
 };
 
-export type DomainCheckerHandle = {
-  focus: () => void;
-  setValue: (value: string) => void;
-};
+export type DomainCheckerHandle = { focus: () => void; setValue: (v: string) => void };
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
   const router = useRouter();
-  const { isConnected } = useWalletContext();
   const [raw, setRaw] = useState("");
   const [state, setState] = useState<CheckState>({ kind: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
-    setValue: (value: string) => {
-      setRaw(value);
-      inputRef.current?.focus();
-    },
+    setValue: (v) => { setRaw(v); inputRef.current?.focus(); },
   }));
 
   const runCheck = useCallback(async (value: string) => {
@@ -79,13 +74,12 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
       if (available) { setState({ kind: "available" }); return; }
       const contractId = await isDomainAvailableOnMarketplace(clean);
       setState({ kind: "taken", marketplaceContractId: contractId });
-    } catch {
-      setState({ kind: "idle" });
-    }
+    } catch { setState({ kind: "idle" }); }
   }, []);
 
   useDebounce(() => void runCheck(raw), 300, [raw]);
 
+  // Typewriter placeholder
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
   const [isFocused, setIsFocused] = useState(false);
   useEffect(() => {
@@ -94,42 +88,37 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
     let idx = 0;
     const tick = async () => {
       while (!cancelled) {
-        await wait(2200);
-        if (cancelled) return;
-        const current = PLACEHOLDERS[idx];
-        for (let i = current.length; i >= 0; i--) {
-          if (cancelled) return;
-          setPlaceholder(current.slice(0, i));
-          await wait(40);
-        }
+        await wait(2200); if (cancelled) return;
+        const cur = PLACEHOLDERS[idx];
+        for (let i = cur.length; i >= 0; i--) { if (cancelled) return; setPlaceholder(cur.slice(0, i)); await wait(40); }
         idx = (idx + 1) % PLACEHOLDERS.length;
-        const next = PLACEHOLDERS[idx];
-        for (let i = 1; i <= next.length; i++) {
-          if (cancelled) return;
-          setPlaceholder(next.slice(0, i));
-          await wait(70);
-        }
+        const nxt = PLACEHOLDERS[idx];
+        for (let i = 1; i <= nxt.length; i++) { if (cancelled) return; setPlaceholder(nxt.slice(0, i)); await wait(70); }
       }
     };
     void tick();
     return () => { cancelled = true; };
   }, [raw, isFocused]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = normalize(raw);
+    if (!clean || state.kind === "checking") return;
+
     if (state.kind === "available") {
-      if (isConnected) {
+      const loggedIn = await isLoggedIn();
+      if (loggedIn) {
         router.push(`/register/${clean}.btc`);
       } else {
-        // Trigger wallet connect — scroll to connect widget
-        const connectBtn = document.querySelector<HTMLButtonElement>("[data-connect-wallet]");
-        connectBtn?.click();
+        // Save intended destination so after login we redirect back
+        sessionStorage.setItem("post_login_redirect", `/register/${clean}.btc`);
+        router.push("/login");
       }
-    } else if (state.kind === "taken" && state.marketplaceContractId) {
-      router.push(`/marketplace/${state.marketplaceContractId}`);
     } else if (state.kind === "taken") {
-      router.push("/marketplace");
+      const dest = state.marketplaceContractId
+        ? `/marketplace/${state.marketplaceContractId}`
+        : "/marketplace";
+      router.push(dest);
     }
   };
 
@@ -149,7 +138,7 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
   );
 
   return (
-    <form onSubmit={onSubmit} className="w-full" aria-label="Check a .btc name">
+    <form onSubmit={onSubmit} className="w-full" aria-label="Search a .btc name">
       <div className={wrapClass}>
         <span className="hidden sm:flex items-center pl-5 text-bn-accent">
           <CurrencyBtc weight="bold" size={20} />
@@ -157,21 +146,16 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
         <div className="relative flex-1 flex items-center min-w-0">
           <input
             ref={inputRef}
-            type="text"
-            inputMode="text"
-            autoComplete="off"
-            spellCheck={false}
+            type="text" inputMode="text" autoComplete="off" spellCheck={false}
             value={raw}
-            onChange={(e) => setRaw(e.target.value)}
+            onChange={e => setRaw(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder || "\u00A0"}
             className="w-full bg-transparent px-4 sm:px-5 py-4 sm:py-5 text-[17px] sm:text-[20px] leading-[1.2] text-bn-ink placeholder-bn-ink-dim focus:outline-none min-w-0"
             aria-label="Name"
           />
-          <span className="font-mono-bn text-[13px] sm:text-[14px] text-bn-ink-muted pr-2 sm:pr-3 select-none">
-            .btc
-          </span>
+          <span className="font-mono-bn text-[13px] sm:text-[14px] text-bn-ink-muted pr-2 sm:pr-3 select-none">.btc</span>
         </div>
         <button
           type="submit"
@@ -181,24 +165,20 @@ export const DomainChecker = forwardRef<DomainCheckerHandle>((_props, ref) => {
           {state.kind === "checking" ? (
             <CircleNotch weight="bold" size={16} className="animate-spin" />
           ) : isAvailable ? (
-            <>{isConnected ? "Buy" : "Connect to Buy"} <ArrowRight weight="bold" size={14} /></>
+            <>Buy <ArrowRight weight="bold" size={14} /></>
           ) : (
             <>Check <ArrowRight weight="bold" size={14} /></>
           )}
         </button>
       </div>
-      <Status state={state} fullName={fullName} isConnected={isConnected} />
+      <Status state={state} fullName={fullName} />
     </form>
   );
 });
 
 DomainChecker.displayName = "DomainChecker";
 
-const Status = ({
-  state, fullName, isConnected,
-}: {
-  state: CheckState; fullName: string; isConnected: boolean;
-}) => {
+const Status = ({ state, fullName }: { state: CheckState; fullName: string }) => {
   if (state.kind === "idle") {
     return <p className="mt-3 text-[13px] text-bn-ink-muted min-h-[20px] pl-1">3–63 characters · letters, numbers, hyphens</p>;
   }
@@ -224,20 +204,13 @@ const Status = ({
           <span className="font-mono-bn text-bn-accent">{fullName}</span>
           <span className="text-bn-ink-muted">is available</span>
         </span>
-        {isConnected ? (
-          <Link href={`/register/${fullName}`} className="text-[13px] font-medium text-bn-accent hover:text-bn-accent-hover inline-flex items-center gap-1">
-            Buy it <ArrowRight weight="bold" size={12} />
-          </Link>
-        ) : (
-          <span className="text-[13px] text-bn-ink-muted">Connect wallet to buy</span>
-        )}
+        <Link href={`/login`} className="text-[13px] font-medium text-bn-accent hover:text-bn-accent-hover inline-flex items-center gap-1">
+          Buy it <ArrowRight weight="bold" size={12} />
+        </Link>
       </div>
     );
   }
-
-  const listingHref = state.marketplaceContractId
-    ? `/marketplace/${state.marketplaceContractId}` : "/marketplace";
-
+  const listingHref = state.marketplaceContractId ? `/marketplace/${state.marketplaceContractId}` : "/marketplace";
   return (
     <div className="mt-3 flex items-center justify-between gap-3 min-h-[20px] pl-1">
       <span className="text-[13px] text-bn-ink-muted flex items-center gap-2">
