@@ -1,285 +1,303 @@
 'use client'
-
+// Fix 2: Login — exact Orobit Hub flow, BNS branding (light page, dark card)
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
 
-type Screen = 'start' | 'create' | 'create-pass' | 'signin'
+type Flow = 'pick' | 'create' | 'create-pw' | 'create-phrase' | 'signin'
 
-function pwChecks(pw: string) {
-  return {
-    length:  pw.length >= 8,
-    upper:   /[A-Z]/.test(pw),
-    lower:   /[a-z]/.test(pw),
-    number:  /[0-9]/.test(pw),
-    special: /[^A-Za-z0-9]/.test(pw),
-  }
+const WORDLIST = ["abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse","access","accident","account","accuse","achieve","acid","acoustic","acquire","across","act","action","actor","actress","actual","adapt","add","addict","address","adjust","admit","adult","advance","advice","aerobic","afford","afraid","again","age","agent","agree","ahead","aim","air","airport","aisle","alarm","album","alcohol","alert","alien","all","alley","allow","almost","alone","alpha","already","also","alter","always","amateur","amazing","among","amount","amused","analyst","anchor","ancient","anger","angle"]
+
+function genMnemonic() {
+  return [...WORDLIST].sort(() => Math.random() - 0.5).slice(0, 12)
 }
 
-const CHECKS = [
-  ['length',  'At least 8 characters'],
-  ['upper',   'One uppercase letter'],
-  ['lower',   'One lowercase letter'],
-  ['number',  'One number'],
-  ['special', 'One special character'],
-] as const
+function pwChecks(pw: string) {
+  return { length: pw.length >= 8, upper: /[A-Z]/.test(pw), lower: /[a-z]/.test(pw), number: /[0-9]/.test(pw), special: /[^A-Za-z0-9]/.test(pw) }
+}
+
+const PW_CRITERIA = [
+  { key: 'length' as const, label: 'At least 8 characters' },
+  { key: 'upper'  as const, label: 'One uppercase letter' },
+  { key: 'lower'  as const, label: 'One lowercase letter' },
+  { key: 'number' as const, label: 'One number' },
+  { key: 'special'as const, label: 'One special character' },
+]
+
+const BACK: Partial<Record<Flow, Flow>> = {
+  create: 'pick', 'create-pw': 'create', 'create-phrase': 'create', signin: 'pick',
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, signup, loginDemo } = useAuth()
-
-  const [screen,   setScreen]   = useState<Screen>('start')
+  const [flow,     setFlow]     = useState<Flow>('pick')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPw,   setShowPw]   = useState(false)
   const [error,    setError]    = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [mnemonic] = useState(() => genMnemonic())
+  const [phraseConfirmed, setPhraseConfirmed] = useState(false)
 
-  const go = (s: Screen) => { setScreen(s); setError(''); setUsername(''); setPassword('') }
+  const go = (f: Flow) => { setFlow(f); setError(''); setPassword('') }
+
+  const redirect = () => {
+    const dest = typeof sessionStorage !== 'undefined'
+      ? (sessionStorage.getItem('post_login_redirect') || '/app') : '/app'
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('post_login_redirect')
+    router.push(dest)
+  }
 
   const checks = pwChecks(password)
   const pwOk   = Object.values(checks).every(Boolean)
 
-  const done = () => router.push('/app')
+  const handleDemo = async () => {
+    setLoading(true)
+    await new Promise(r => setTimeout(r, 500))
+    loginDemo(); redirect()
+    setLoading(false)
+  }
 
-  const handleDemo   = () => { loginDemo(); done() }
-  const handleSignup = () => { const r = signup(username, password); r.ok ? done() : setError(r.error!) }
-  const handleSignin = () => { const r = login(username, password);  r.ok ? done() : setError(r.error!) }
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pwOk) { setError('Please meet all password requirements.'); return }
+    setLoading(true)
+    await new Promise(r => setTimeout(r, 600))
+    const res = signup(username, password)
+    if (!res.ok) { setError(res.error!); setLoading(false); return }
+    redirect()
+  }
+
+  const handleSignin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    await new Promise(r => setTimeout(r, 600))
+    const res = login(username, password)
+    if (!res.ok) { setError(res.error!); setLoading(false); return }
+    redirect()
+  }
+
+  const backFlow = BACK[flow]
 
   return (
-    /* Dark full-screen overlay — same as original wallet-connect modal pattern */
-    <div className="min-h-screen bg-bn-bg flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden">
+    <div className="relative min-h-screen bg-bn-page">
+      {/* Subtle glow top */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[40vh] opacity-30"
+        style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -10%, rgba(247,147,26,0.15) 0%, transparent 70%)' }} />
 
-      {/* Glow — matches original */}
-      <div className="pointer-events-none fixed inset-0 bn-orange-glow opacity-60" />
-      <div className="pointer-events-none fixed inset-0 bn-grid-dark opacity-30" />
-
-      {/* Back link */}
-      <div className="fixed top-5 left-6 z-10">
-        <Link href="/" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-          <Image src="/navbar_logo_dark.svg" alt="Bitcoin Names" width={110} height={28} className="h-7 w-auto" />
+      {/* Header */}
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <Link href="/">
+          <Image src="/navbar_logo.svg" alt="Bitcoin Names" width={122} height={31} className="h-[34px] w-auto" />
         </Link>
-      </div>
+        {backFlow ? (
+          <button onClick={() => go(backFlow)} className="text-[14px] text-bn-ink-muted hover:text-bn-ink transition-colors flex items-center gap-1">
+            ← Back
+          </button>
+        ) : (
+          <Link href="/" className="text-[14px] text-bn-ink-muted hover:text-bn-ink transition-colors flex items-center gap-1">← Back</Link>
+        )}
+      </header>
 
-      <div className="relative z-10 w-full max-w-[420px]">
+      <main className="relative z-10 mx-auto flex max-w-[440px] flex-col px-5 pb-20 pt-4">
 
-        {/* ── START ── */}
-        {screen === 'start' && (
+        {/* ── PICK ── */}
+        {flow === 'pick' && (
           <>
-            <div className="text-center mb-9">
-              <div className="w-14 h-14 rounded-2xl bg-bn-accent flex items-center justify-center text-2xl mx-auto mb-4" style={{ boxShadow: '0 8px 24px rgba(247,147,26,0.35)' }}>₿</div>
-              <h1 className="text-[28px] font-semibold text-bn-text tracking-[-0.03em] mb-2">Get started</h1>
-              <p className="text-[14px] text-bn-text-muted font-light">Sign in to buy and manage your .btc names.</p>
+            <div className="text-center mb-10">
+              <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-bn-ink mb-2">Get started</h1>
+              <p className="text-[15px] text-bn-ink-muted">Set up your Bitcoin Names account in seconds.</p>
             </div>
-
-            {/* Demo — top, most prominent */}
-            <button onClick={handleDemo}
-              className="w-full flex items-center gap-3.5 p-4 rounded-2xl border border-bn-accent/20 bg-bn-accent/6 hover:bg-bn-accent/10 transition-colors mb-2 text-left cursor-pointer">
-              <span className="w-10 h-10 rounded-xl bg-bn-accent/20 flex items-center justify-center text-lg shrink-0">⚡</span>
-              <span className="flex-1">
-                <span className="block text-[15px] font-semibold text-bn-accent">Try demo</span>
-                <span className="text-[12px] text-bn-text-dim">Explore the full app instantly — no signup needed.</span>
-              </span>
-              <span className="text-bn-accent">→</span>
-            </button>
-
-            <div className="flex items-center gap-3 my-3">
-              <div className="flex-1 h-px bg-bn-border" />
-              <span className="text-[12px] text-bn-text-dim">or</span>
-              <div className="flex-1 h-px bg-bn-border" />
+            <div className="space-y-3">
+              <TopCard icon="💼" title="Create new account" desc="New? Create an account secured by a password or seed phrase." onClick={() => go('create')} />
+              <TopCard icon="🔑" title="Sign in" desc="Already have an account? Sign in with your credentials." onClick={() => go('signin')} />
             </div>
-
-            <button onClick={() => go('create')}
-              className="w-full flex items-center gap-3.5 p-4 rounded-2xl border border-bn-border bg-bn-surface hover:border-bn-border-mid transition-colors mb-2 text-left cursor-pointer">
-              <span className="w-10 h-10 rounded-xl bg-bn-surface-2 flex items-center justify-center text-lg shrink-0">💼</span>
-              <span className="flex-1">
-                <span className="block text-[15px] font-semibold text-bn-text">Create new account</span>
-                <span className="text-[12px] text-bn-text-dim">New to Bitcoin? Set up in seconds.</span>
-              </span>
-              <span className="text-bn-text-dim">→</span>
-            </button>
-
-            <button onClick={() => go('signin')}
-              className="w-full flex items-center gap-3.5 p-4 rounded-2xl border border-bn-border bg-bn-surface hover:border-bn-border-mid transition-colors text-left cursor-pointer">
-              <span className="w-10 h-10 rounded-xl bg-bn-surface-2 flex items-center justify-center text-lg shrink-0">🔐</span>
-              <span className="flex-1">
-                <span className="block text-[15px] font-semibold text-bn-text">Sign in</span>
-                <span className="text-[12px] text-bn-text-dim">Already have an account.</span>
-              </span>
-              <span className="text-bn-text-dim">→</span>
+            <div className="mt-5 relative flex items-center gap-3">
+              <div className="flex-1 h-px bg-bn-line" /><span className="text-[13px] text-bn-ink-muted">or</span><div className="flex-1 h-px bg-bn-line" />
+            </div>
+            <button onClick={handleDemo} disabled={loading}
+              className="mt-5 w-full flex items-center gap-4 rounded-2xl border border-bn-accent/20 bg-bn-accent/6 hover:bg-bn-accent/10 p-5 text-left transition-colors">
+              <div className="w-14 h-14 rounded-2xl bg-bn-accent flex items-center justify-center text-2xl shrink-0 shadow-[0_4px_12px_rgba(247,147,26,0.3)]">⚡</div>
+              <div className="flex-1">
+                <div className="text-[16px] font-semibold text-bn-accent mb-0.5">{loading ? 'Loading…' : 'Try demo'}</div>
+                <div className="text-[13px] text-bn-ink-muted">Explore the full app instantly — no signup needed.</div>
+              </div>
+              <span className="text-bn-accent text-lg">→</span>
             </button>
           </>
         )}
 
-        {/* ── CREATE ── */}
-        {screen === 'create' && (
+        {/* ── CREATE: sub-picker ── */}
+        {flow === 'create' && (
           <>
-            <IconHeader icon="💼" title="Create new account" sub="Choose how you'd like to secure your wallet." />
-
-            <button onClick={() => go('create-pass')}
-              className="w-full flex items-center gap-3.5 p-4 rounded-2xl border border-bn-accent/40 bg-bn-surface hover:border-bn-accent/60 transition-colors mb-2 text-left cursor-pointer">
-              <span className="w-10 h-10 rounded-xl bg-bn-surface-2 flex items-center justify-center text-lg shrink-0">🔑</span>
-              <span className="flex-1">
-                <span className="block text-[15px] font-semibold text-bn-text">Username + password</span>
-                <span className="text-[12px] text-bn-text-dim">Simple and fast — pick a username and a strong password.</span>
-              </span>
-              <span className="text-bn-text-dim">→</span>
-            </button>
-
-            <button onClick={handleDemo}
-              className="w-full flex items-center gap-3.5 p-4 rounded-2xl border border-bn-border bg-bn-surface hover:border-bn-border-mid transition-colors text-left cursor-pointer">
-              <span className="w-10 h-10 rounded-xl bg-bn-surface-2 flex items-center justify-center text-lg shrink-0">🛡️</span>
-              <span className="flex-1">
-                <span className="block text-[15px] font-semibold text-bn-text">Create with secret phrase</span>
-                <span className="text-[12px] text-bn-text-dim">Generate a 12-word mnemonic — your keys, your Bitcoin.</span>
-              </span>
-              <span className="text-bn-text-dim">→</span>
-            </button>
-
-            <BackBtn onClick={() => go('start')} />
+            <FlowHeader icon="💼" title="Create new account" sub="Choose how you'd like to secure your wallet." />
+            <div className="space-y-3">
+              <SubCard icon="🔑" title="Username + password" desc="Simple and fast — pick a username and a strong password." onClick={() => go('create-pw')} />
+              <SubCard icon="🛡️" title="Create with secret phrase" desc="Generate a 12-word mnemonic for full self-custody — your keys, your Bitcoin." onClick={() => go('create-phrase')} />
+            </div>
           </>
         )}
 
         {/* ── CREATE WITH PASSWORD ── */}
-        {screen === 'create-pass' && (
+        {flow === 'create-pw' && (
           <>
-            <IconHeader icon="🔑" title="Create with password" sub="Enter a username and a strong password to secure your wallet." />
+            <FlowHeader icon="🔑" title="Create with password" sub="Enter a username and a strong password to secure your wallet." />
             {error && <ErrorBox msg={error} />}
-
-            <div className="bg-bn-surface border border-bn-border rounded-2xl p-5 mb-3">
-              <label className="block text-[11px] font-semibold text-bn-text-muted tracking-[0.08em] uppercase mb-2">Username</label>
-              <input
-                autoFocus
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSignup()}
-                placeholder="satoshi"
-                className="w-full px-3.5 py-3 bg-bn-bg border border-bn-border rounded-xl text-bn-text text-[15px] placeholder-bn-text-dim outline-none focus:border-bn-accent/50 transition-colors font-[family-name:var(--font-hubot-sans)]"
-              />
-
-              <label className="block text-[11px] font-semibold text-bn-text-muted tracking-[0.08em] uppercase mb-2 mt-4">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSignup()}
-                  placeholder="At least 8 characters"
-                  className="w-full px-3.5 py-3 pr-11 bg-bn-bg border border-bn-border rounded-xl text-bn-text text-[15px] placeholder-bn-text-dim outline-none focus:border-bn-accent/50 transition-colors font-[family-name:var(--font-hubot-sans)]"
-                />
-                <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bn-text-dim hover:text-bn-text-muted transition-colors text-base">
-                  {showPw ? '🙈' : '👁'}
-                </button>
-              </div>
-
-              {/* Strength checklist */}
-              {password.length > 0 && (
-                <div className="mt-2.5 p-3 bg-bn-bg rounded-xl flex flex-col gap-1.5">
-                  {CHECKS.map(([key, label]) => (
-                    <div key={key} className="flex items-center gap-2 text-[13px]">
-                      <span className={`w-[17px] h-[17px] rounded-full border-2 flex items-center justify-center text-[9px] shrink-0 transition-colors ${checks[key] ? 'border-positive-green text-positive-green' : 'border-bn-border text-transparent'}`}>✓</span>
-                      <span className={checks[key] ? 'text-positive-green' : 'text-bn-text-dim'}>{label}</span>
-                    </div>
-                  ))}
+            <div className="rounded-3xl border border-bn-line bg-white p-7 shadow-[0_1px_3px_rgba(10,10,10,0.06),0_8px_32px_-8px_rgba(10,10,10,0.08)]">
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-semibold text-bn-ink mb-2">Username</label>
+                  <input autoFocus value={username} onChange={e => setUsername(e.target.value)}
+                    placeholder="satoshi" required
+                    className="w-full h-12 px-4 border border-bn-line-2 rounded-xl text-[15px] text-bn-ink placeholder-bn-ink-dim focus:outline-none focus:border-bn-accent/40 focus:ring-2 focus:ring-bn-accent/10 transition-all bg-bn-page-2" />
                 </div>
-              )}
+                <div>
+                  <label className="block text-[13px] font-semibold text-bn-ink mb-2">Password</label>
+                  <div className="relative">
+                    <input type={showPw ? 'text' : 'password'} value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="At least 8 characters" required
+                      className="w-full h-12 px-4 pr-12 border border-bn-line-2 rounded-xl text-[15px] text-bn-ink placeholder-bn-ink-dim focus:outline-none focus:border-bn-accent/40 focus:ring-2 focus:ring-bn-accent/10 transition-all bg-bn-page-2" />
+                    <button type="button" onClick={() => setShowPw(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-bn-ink-muted hover:text-bn-ink">
+                      {showPw ? '🙈' : '👁'}
+                    </button>
+                  </div>
+                  {/* Strength checklist */}
+                  <div className="mt-2 rounded-xl border border-bn-line bg-bn-page-2 p-3 space-y-1.5">
+                    {PW_CRITERIA.map(({ key, label }) => {
+                      const met = checks[key]
+                      const fail = password.length > 0 && !met
+                      return (
+                        <div key={key} className={`flex items-center gap-2 text-[12px] transition-colors ${met ? 'text-green-600' : fail ? 'text-red-500' : 'text-bn-ink-muted'}`}>
+                          <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] shrink-0 ${met ? 'border-green-500 text-green-500' : fail ? 'border-red-400' : 'border-bn-line-2'}`}>{met ? '✓' : ''}</span>
+                          {label}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                <button type="submit" disabled={loading || !pwOk}
+                  className="w-full h-12 rounded-xl bg-bn-ink text-white font-semibold text-[15px] hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                  {loading ? '⏳ Creating…' : <>Create wallet →</>}
+                </button>
+              </form>
             </div>
+          </>
+        )}
 
-            <PrimaryBtn onClick={handleSignup} disabled={!username || !pwOk}>Create wallet →</PrimaryBtn>
-            <BackBtn onClick={() => go('create')} />
+        {/* ── SECRET PHRASE (show) ── */}
+        {flow === 'create-phrase' && !phraseConfirmed && (
+          <>
+            <FlowHeader icon="🛡️" title="Your secret phrase" sub="Write these 12 words down and store them safely. Never share them." />
+            <div className="rounded-3xl border border-bn-line bg-white p-6 shadow-[0_1px_3px_rgba(10,10,10,0.06),0_8px_32px_-8px_rgba(10,10,10,0.08)] mb-4">
+              <div className="grid grid-cols-3 gap-2">
+                {mnemonic.map((word, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-xl border border-bn-line bg-bn-page-2 px-3 py-2.5">
+                    <span className="w-4 shrink-0 text-[10px] font-bold text-bn-ink-muted font-mono">{i + 1}</span>
+                    <span className="font-mono text-[13px] font-semibold text-bn-ink">{word}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-[12px] text-bn-ink-muted">
+                🛡️ These 12 words are the only way to recover your wallet. Write them down before continuing.
+              </div>
+            </div>
+            <button onClick={() => { setPhraseConfirmed(true); handleDemo() }}
+              className="w-full h-12 rounded-xl bg-bn-ink text-white font-semibold text-[15px] hover:bg-black transition-colors flex items-center justify-center gap-2">
+              I've saved my phrase →
+            </button>
           </>
         )}
 
         {/* ── SIGN IN ── */}
-        {screen === 'signin' && (
+        {flow === 'signin' && (
           <>
-            <IconHeader icon="🔐" title="Welcome back" sub="Sign in to your Bitcoin Names account." />
-            {error && <ErrorBox msg={error} />}
-
-            <div className="bg-bn-surface border border-bn-border rounded-2xl p-5 mb-3">
-              <label className="block text-[11px] font-semibold text-bn-text-muted tracking-[0.08em] uppercase mb-2">Username</label>
-              <input
-                autoFocus
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSignin()}
-                placeholder="satoshi"
-                className="w-full px-3.5 py-3 bg-bn-bg border border-bn-border rounded-xl text-bn-text text-[15px] placeholder-bn-text-dim outline-none focus:border-bn-accent/50 transition-colors font-[family-name:var(--font-hubot-sans)]"
-              />
-
-              <label className="block text-[11px] font-semibold text-bn-text-muted tracking-[0.08em] uppercase mb-2 mt-4">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSignin()}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-3 pr-11 bg-bn-bg border border-bn-border rounded-xl text-bn-text text-[15px] placeholder-bn-text-dim outline-none focus:border-bn-accent/50 transition-colors font-[family-name:var(--font-hubot-sans)]"
-                />
-                <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bn-text-dim hover:text-bn-text-muted text-base">
-                  {showPw ? '🙈' : '👁'}
-                </button>
-              </div>
-
-              <p className="mt-3 text-[12px] text-bn-text-dim text-center">
-                Demo credentials: <span className="font-[family-name:var(--font-source-code-pro)] text-bn-text-muted">satoshi / Demo1234!</span>
-              </p>
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 rounded-2xl border border-bn-line bg-bn-page-2 flex items-center justify-center text-2xl mx-auto mb-4">🔐</div>
+              <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-bn-ink mb-2">Welcome back</h1>
+              <p className="text-[14px] text-bn-ink-muted">Sign in with your name and password.</p>
             </div>
-
-            <PrimaryBtn onClick={handleSignin} disabled={!username || !password}>Sign in →</PrimaryBtn>
-
-            <p className="text-center mt-3.5 text-[13px] text-bn-text-dim">
-              No account?{' '}
-              <button onClick={() => go('create')} className="text-bn-accent font-semibold hover:text-bn-accent-hover transition-colors">
-                Create one
-              </button>
+            {error && <ErrorBox msg={error} />}
+            <div className="rounded-3xl border border-bn-line bg-white p-7 shadow-[0_1px_3px_rgba(10,10,10,0.06),0_8px_32px_-8px_rgba(10,10,10,0.08)]">
+              <form onSubmit={handleSignin} className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-semibold text-bn-ink mb-2">Username</label>
+                  <input autoFocus value={username} onChange={e => setUsername(e.target.value)}
+                    placeholder="satoshi" required
+                    className="w-full h-12 px-4 border border-bn-line-2 rounded-xl text-[15px] text-bn-ink placeholder-bn-ink-dim focus:outline-none focus:border-bn-accent/40 focus:ring-2 focus:ring-bn-accent/10 transition-all bg-bn-page-2" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-bn-ink mb-2">Password</label>
+                  <div className="relative">
+                    <input type={showPw ? 'text' : 'password'} value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••" required
+                      className="w-full h-12 px-4 pr-12 border border-bn-line-2 rounded-xl text-[15px] text-bn-ink placeholder-bn-ink-dim focus:outline-none focus:border-bn-accent/40 focus:ring-2 focus:ring-bn-accent/10 transition-all bg-bn-page-2" />
+                    <button type="button" onClick={() => setShowPw(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-bn-ink-muted hover:text-bn-ink">
+                      {showPw ? '🙈' : '👁'}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[12px] text-bn-ink-dim text-center">Demo: satoshi / Demo1234!</p>
+                </div>
+                <button type="submit" disabled={loading}
+                  className="w-full h-12 rounded-xl bg-bn-ink text-white font-semibold text-[15px] hover:bg-black disabled:opacity-40 transition-colors flex items-center justify-center gap-2">
+                  {loading ? '⏳ Signing in…' : 'Unlock wallet →'}
+                </button>
+              </form>
+            </div>
+            <p className="mt-5 text-center text-[13px] text-bn-ink-muted">
+              New to Bitcoin Names?{' '}
+              <button onClick={() => go('create')} className="font-semibold text-bn-accent hover:text-bn-accent-hover">Create a wallet</button>
             </p>
-
-            <BackBtn onClick={() => go('start')} />
           </>
         )}
 
-      </div>
+      </main>
     </div>
   )
 }
 
-function IconHeader({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+function TopCard({ icon, title, desc, onClick }: { icon: string; title: string; desc: string; onClick: () => void }) {
   return (
-    <div className="text-center mb-7">
-      <div className="w-14 h-14 rounded-2xl bg-bn-accent flex items-center justify-center text-2xl mx-auto mb-4" style={{ boxShadow: '0 8px 24px rgba(247,147,26,0.35)' }}>{icon}</div>
-      <h1 className="text-[26px] font-semibold text-bn-text tracking-[-0.03em] mb-2">{title}</h1>
-      <p className="text-[13px] text-bn-text-muted max-w-[300px] mx-auto leading-relaxed">{sub}</p>
+    <button onClick={onClick} className="group w-full flex items-center gap-5 rounded-3xl border border-bn-line bg-white p-6 text-left hover:border-bn-accent/30 hover:shadow-[0_4px_16px_rgba(10,10,10,0.08)] transition-all active:scale-[0.99]">
+      <div className="w-14 h-14 rounded-2xl bg-bn-ink flex items-center justify-center text-2xl shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[17px] font-semibold text-bn-ink mb-1">{title}</div>
+        <div className="text-[13px] text-bn-ink-muted leading-snug">{desc}</div>
+      </div>
+      <span className="text-bn-ink-muted group-hover:text-bn-accent transition-colors text-lg">→</span>
+    </button>
+  )
+}
+
+function SubCard({ icon, title, desc, onClick }: { icon: string; title: string; desc: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="group w-full flex items-center gap-4 rounded-2xl border border-bn-line bg-white p-5 text-left hover:border-bn-accent/30 hover:shadow-[0_2px_8px_rgba(10,10,10,0.06)] transition-all active:scale-[0.99]">
+      <div className="w-11 h-11 rounded-xl bg-bn-page-2 border border-bn-line flex items-center justify-center text-xl shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[15px] font-semibold text-bn-ink mb-0.5">{title}</div>
+        <div className="text-[13px] text-bn-ink-muted leading-snug">{desc}</div>
+      </div>
+      <span className="text-bn-ink-muted group-hover:text-bn-accent transition-colors">→</span>
+    </button>
+  )
+}
+
+function FlowHeader({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+  return (
+    <div className="text-center mb-8">
+      <div className="w-14 h-14 rounded-2xl bg-bn-ink flex items-center justify-center text-2xl mx-auto mb-4">{icon}</div>
+      <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-bn-ink mb-2">{title}</h1>
+      <p className="text-[13px] text-bn-ink-muted max-w-[300px] mx-auto leading-relaxed">{sub}</p>
     </div>
   )
 }
 
 function ErrorBox({ msg }: { msg: string }) {
-  return (
-    <div className="mb-3.5 px-4 py-2.5 bg-negative-red/8 border border-negative-red/20 rounded-xl text-negative-red text-[13px]">
-      {msg}
-    </div>
-  )
-}
-
-function PrimaryBtn({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick} disabled={disabled}
-      className="w-full py-4 rounded-2xl text-[16px] font-semibold transition-all cursor-pointer disabled:cursor-not-allowed"
-      style={{ background: disabled ? '#1a1a1e' : '#f7931a', color: disabled ? '#5a5a62' : '#0b0b0c' }}>
-      {children}
-    </button>
-  )
-}
-
-function BackBtn({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="block mx-auto mt-4 text-[13px] text-bn-text-dim hover:text-bn-text-muted transition-colors">
-      ← Back
-    </button>
-  )
+  return <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-600">{msg}</div>
 }

@@ -1,5 +1,4 @@
 "use client";
-
 import { ArrowUpRight, Compass, ShieldCheck, Sparkle, Storefront } from "@phosphor-icons/react/dist/ssr";
 import { AnimatePresence, m, useScroll, useTransform } from "motion/react";
 import Image from "next/image";
@@ -12,12 +11,11 @@ const LINKS = [
   { label: "Quantum", href: "#quantum", icon: ShieldCheck, desc: "Post-quantum ready by design" },
   { label: "Premium", href: "#premium", icon: Sparkle, desc: "Curated premium names" },
 ];
-
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 export const StickyNav = () => {
   const { scrollY } = useScroll();
-  const bg = useTransform(scrollY, [0, 80], ["rgba(255,255,255,0)", "rgba(255,255,255,0.8)"]);
+  const bg = useTransform(scrollY, [0, 80], ["rgba(255,255,255,0)", "rgba(255,255,255,0.85)"]);
   const borderOpacity = useTransform(scrollY, [0, 80], [0, 1]);
   const [open, setOpen] = useState(false);
 
@@ -25,9 +23,9 @@ export const StickyNav = () => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", k);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", k); };
   }, [open]);
 
   return (
@@ -37,20 +35,17 @@ export const StickyNav = () => {
         <Link href="/" className="group inline-flex items-center" aria-label="Bitcoin Names home">
           <Image src="/navbar_logo.svg" alt="Bitcoin Names" width={122} height={31} priority className="h-[38px] w-auto transition-transform group-hover:-translate-y-0.5" />
         </Link>
-
         <div className="hidden md:flex items-center gap-8">
           {LINKS.map((l) => (
             <Link key={l.label} href={l.href} className="text-[14px] font-medium text-bn-ink-2 hover:text-bn-ink transition-colors">{l.label}</Link>
           ))}
         </div>
-
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-[14px] font-medium text-bn-ink-2 hover:text-bn-ink transition-colors">Log in</Link>
+        {/* Single CTA */}
+        <div className="hidden md:flex">
           <Link href="/login" className="inline-flex items-center bg-bn-ink text-white font-medium text-[13px] px-5 py-2.5 rounded-full hover:bg-black transition-colors">
             Get started
           </Link>
         </div>
-
         <button type="button" onClick={() => setOpen(o => !o)} aria-label="Toggle navigation"
           className="md:hidden relative inline-flex items-center justify-center w-10 h-10 rounded-full text-bn-ink hover:bg-bn-page-2 transition-colors">
           <span className="relative block w-5 h-4" aria-hidden>
@@ -60,7 +55,6 @@ export const StickyNav = () => {
           </span>
         </button>
       </div>
-
       <AnimatePresence>
         {open && (
           <>
@@ -81,9 +75,9 @@ export const StickyNav = () => {
                     </Link>
                   );
                 })}
-                <div className="mt-3 pt-4 border-t border-bn-line flex flex-col gap-2">
-                  <Link href="/login" onClick={() => setOpen(false)} className="inline-flex items-center justify-center bg-bn-ink text-white font-medium text-[14px] px-5 py-3.5 rounded-full hover:bg-black transition-all">
-                    Log in / Get started
+                <div className="mt-3 pt-4 border-t border-bn-line">
+                  <Link href="/login" onClick={() => setOpen(false)} className="flex items-center justify-center bg-bn-ink text-white font-medium text-[14px] px-5 py-3.5 rounded-full hover:bg-black transition-all">
+                    Get started
                   </Link>
                 </div>
               </div>
