@@ -65,11 +65,18 @@ export default function AppHome() {
 
   const step = user.onboardingStep ?? 0
   const showOnboarding = user.showOnboarding !== false && step < 5
+
+  // Proper typing for current step
+  const currentStep = STEPS[step] as typeof STEPS[number] | undefined
+  const current = currentStep && !('isFinal' in currentStep) ? currentStep : null
+
   const progress = Math.round((step / 5) * 100)
-  const current = STEPS[step as keyof typeof STEPS]
 
   const handleStepCta = () => {
-    if (step === 0) { setAddFundsModal(true); return }
+    if (step === 0) {
+      setAddFundsModal(true)
+      return
+    }
     advanceOnboarding()
   }
 
@@ -82,7 +89,7 @@ export default function AppHome() {
       </div>
 
       {/* Onboarding */}
-      {showOnboarding && current && typeof current === 'object' && !('isFinal' in current) && (
+      {showOnboarding && current && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -91,45 +98,46 @@ export default function AppHome() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[13px] font-semibold text-bn-ink-muted">{step} / 5</span>
-              <button onClick={() => updateUser({ showOnboarding: false })} className="text-[12px] text-bn-ink-dim hover:text-bn-ink-muted">Dismiss</button>
+              <button 
+                onClick={() => updateUser({ showOnboarding: false })} 
+                className="text-[12px] text-bn-ink-dim hover:text-bn-ink-muted"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
+
           <div className="h-1.5 rounded-full bg-bn-page-3 mb-4 overflow-hidden">
             <div className="h-full bg-bn-accent rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
+
           <div className="flex items-start gap-4 rounded-2xl border border-bn-accent/25 bg-bn-accent/5 p-5">
-            <div className="w-11 h-11 rounded-xl bg-bn-accent/15 flex items-center justify-center text-xl shrink-0">{current.icon}</div>
+            <div className="w-11 h-11 rounded-xl bg-bn-accent/15 flex items-center justify-center text-xl shrink-0">
+              {current.icon}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[11px] font-medium text-bn-ink-muted">Step {step + 1} of 5</span>
               </div>
               <div className="text-[16px] font-semibold text-bn-ink mb-1">{current.title}</div>
               <div className="text-[13px] text-bn-ink-muted mb-4">{current.desc}</div>
-              <button onClick={handleStepCta}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold transition-colors ${current.href && current.href !== '#add-funds' ? 'bg-bn-ink text-white hover:bg-black' : 'bg-bn-accent text-white hover:bg-bn-accent-h'}`}
-                onClick={() => { if (current.href && current.href !== '#add-funds') { advanceOnboarding() } else { handleStepCta() } }}>
+
+              <button 
+                onClick={handleStepCta}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold transition-colors ${
+                  current.href && current.href !== '#add-funds' 
+                    ? 'bg-bn-ink text-white hover:bg-black' 
+                    : 'bg-bn-accent text-white hover:bg-bn-accent-h'
+                }`}
+              >
                 {current.cta} →
               </button>
             </div>
           </div>
-
-          {/* Completion message */}
-          {step >= 5 && (
-            <div className="flex items-start gap-4 rounded-2xl border border-green-200 bg-green-50 p-5">
-              <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-xl shrink-0">🎉</div>
-              <div className="flex-1">
-                <div className="text-[16px] font-semibold text-bn-ink mb-1">Congratulations!</div>
-                <div className="text-[13px] text-bn-ink-muted">
-                  You can now accept funds to your wallet with just your name:{' '}
-                  <span className="font-mono-bn font-semibold text-bn-accent">{user.primaryName ?? `${user.name}.btc`}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Stats — Fix 7: removed Block Height */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           { label: 'Names Owned', value: user.ownedDomains.length.toString(), sub: user.ownedDomains.length === 0 ? 'Buy your first name' : `+${user.ownedDomains.length} total`, cls: 'text-bn-ink-muted' },
@@ -145,7 +153,7 @@ export default function AppHome() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* My Names — empty state if none */}
+        {/* My Names */}
         <div className="bg-white border border-bn-line rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(10,10,10,0.05)]">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-bn-line">
             <span className="text-[13px] font-semibold text-bn-ink">My Names</span>
@@ -165,7 +173,9 @@ export default function AppHome() {
                   <p className="font-mono-bn text-[14px] font-medium text-bn-ink">{name}<span className="text-bn-accent">.btc</span></p>
                   <p className="font-mono-bn text-[11px] text-bn-ink-muted mt-0.5">{user.primaryName === `${name}.btc` ? 'Primary' : 'Owned'}</p>
                 </div>
-                {user.primaryName === `${name}.btc` && <span className="font-mono-bn text-[10px] bg-bn-accent/10 text-bn-accent px-2 py-0.5 rounded uppercase">Primary</span>}
+                {user.primaryName === `${name}.btc` && (
+                  <span className="font-mono-bn text-[10px] bg-bn-accent/10 text-bn-accent px-2 py-0.5 rounded uppercase">Primary</span>
+                )}
               </div>
             ))
           )}
@@ -182,18 +192,20 @@ export default function AppHome() {
               <div className="text-3xl mb-3">📋</div>
               <p className="text-[13px] text-bn-ink-muted">No activity yet. Buy a name to get started.</p>
             </div>
-          ) : MOCK_ACTIVITY.map((a, i) => (
-            <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i < 2 ? 'border-b border-bn-line' : ''}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[13px] shrink-0 ${a.type === 'register' ? 'bg-bn-accent/8' : 'bg-green-50'}`}>
-                {a.type === 'register' ? '₿' : '✎'}
+          ) : (
+            MOCK_ACTIVITY.map((a, i) => (
+              <div key={i} className={`flex items-center gap-3 px-5 py-3 ${i < 2 ? 'border-b border-bn-line' : ''}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[13px] shrink-0 ${a.type === 'register' ? 'bg-bn-accent/8' : 'bg-green-50'}`}>
+                  {a.type === 'register' ? '₿' : '✎'}
+                </div>
+                <div className="flex-1">
+                  <p className="text-[13px] text-bn-ink">{a.type === 'register' ? 'Registered ' : 'Updated '}<strong>{a.name}</strong></p>
+                  <p className="font-mono-bn text-[11px] text-bn-ink-muted mt-0.5">{a.time}</p>
+                </div>
+                <span className="font-mono-bn text-[12px] text-bn-accent">{a.amount}</span>
               </div>
-              <div className="flex-1">
-                <p className="text-[13px] text-bn-ink">{a.type === 'register' ? 'Registered ' : 'Updated '}<strong>{a.name}</strong></p>
-                <p className="font-mono-bn text-[11px] text-bn-ink-muted mt-0.5">{a.time}</p>
-              </div>
-              <span className="font-mono-bn text-[12px] text-bn-accent">{a.amount}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -232,8 +244,14 @@ export default function AppHome() {
               { name: 'MoonPay', desc: 'Instant crypto purchase with debit or credit card', icon: '🌙' },
               { name: 'Send BTC', desc: 'Transfer from another wallet or exchange', icon: '₿' },
             ].map(opt => (
-              <button key={opt.name} onClick={() => { setAddFundsModal(false); advanceOnboarding() }}
-                className="w-full flex items-center gap-4 p-4 mb-2 border border-bn-line rounded-xl hover:border-bn-accent/30 hover:bg-bn-accent/5 transition-colors text-left">
+              <button 
+                key={opt.name} 
+                onClick={() => { 
+                  setAddFundsModal(false); 
+                  advanceOnboarding() 
+                }}
+                className="w-full flex items-center gap-4 p-4 mb-2 border border-bn-line rounded-xl hover:border-bn-accent/30 hover:bg-bn-accent/5 transition-colors text-left"
+              >
                 <span className="text-2xl">{opt.icon}</span>
                 <div>
                   <div className="text-[14px] font-semibold text-bn-ink">{opt.name}</div>
