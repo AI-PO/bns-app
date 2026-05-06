@@ -1,54 +1,32 @@
 # Bitcoin Names — App
 
-Full application for buying, managing, and trading .btc names. Wallet-gated: users must connect their Orobit wallet to buy or manage names.
+Full Next.js app. All data mocked. Hand to devs to wire up real backends.
 
-## Features
-- **Search** — check .btc name availability on Bitcoin
-- **Buy (mint)** — register a name for the first time via Orobit SCL contract
-- **Marketplace** — browse all listed names, filter by price/length/type
-- **Bid** — make offers on listed names
-- **Profile** — view owned names, manage records, list for sale
-- **Auction** — set fixed price or time-limited auction on your names
-
-## Auth model
-No email/password login. Identity = wallet address. Connect wallet → you're in.
-All actions requiring a wallet (buy, bid, list) prompt a connect-wallet dialog if not connected.
-
-## Stack
-- Next.js 15 (App Router)
-- Tailwind CSS v4
-- Supabase (auth + database)
-- Orobit SDK (wallet connection + on-chain transactions)
-- Stripe (fiat on-ramp, optional)
-- @tanstack/react-query (data fetching)
-- @tanstack/react-table (marketplace + profile tables)
-
-## Setup
-
+## Run
 ```bash
-cp .env.example .env.local
-# Fill in all env vars
-npm install
-npm run dev
+npm install && npm run dev
 ```
+→ http://localhost:3000
 
-## Key flows
+## Demo credentials
+| Username | Password  |
+|----------|-----------|
+| satoshi  | Demo1234! |
+| demo     | Demo1234! |
+| filip    | Filip123! |
 
-### Buy (mint)
-1. User searches a name → available
-2. If not connected → ConnectWallet dialog opens
-3. If connected → `/register/[domain]` → order summary → Orobit transaction → success
+Or create an account on the signup screen (stored in localStorage).
 
-### Marketplace
-- `/marketplace` — all listings with filter/sort
-- `/marketplace/[contract_id]` — single listing: buy now or make offer
+## Routes
+- `/login` — auth (Orobit Hub flow: start → create → create-with-password / sign-in)
+- `/app` — dashboard
+- `/app/search` — name search + 3-step buy flow
+- `/app/marketplace` — browse + buy secondary listings
+- `/app/my-names` — manage owned names
+- `/app/identity` — edit records (wallet, lightning, site, twitter, nostr)
+- `/app/activity` — transaction history
 
-### Profile
-- `/profile` → tabs: My Names | Listings | Offers | Orders
-- From My Names: manage records, list for sale (fixed price or auction), transfer, renew
-
-## Wallet integration
-Wallet library is injected via `OrobitContextProvider`. Replace `src/orobit-sdk/provider.ts` with your real SATS Connect / Leather / Xverse implementation.
-
-## Deploy
-Vercel — uses `.github/workflows/deploy-vercel.yml`. Set all env vars in Vercel dashboard.
+## Dev handoff
+- **Auth** → replace `lib/auth.tsx` with real Supabase auth
+- **Data** → replace `lib/mock-data.ts` with real API calls
+- No env vars needed for mock version — deploys to Vercel as-is
