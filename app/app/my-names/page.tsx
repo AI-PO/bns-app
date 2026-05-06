@@ -3,8 +3,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { MOCK_OWNED_NAMES } from '@/lib/mock-data'
 
-const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
-
 export default function MyNamesPage() {
   const [toast, setToast] = useState('')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000) }
@@ -13,48 +11,45 @@ export default function MyNamesPage() {
     <div className="p-7">
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-bn-text">My Names</h1>
-          <p className="text-[14px] text-bn-text-muted mt-1">Manage your .btc identity portfolio.</p>
+          <h1 className="text-[22px] font-medium tracking-[-0.03em] text-bn-ink">My Names</h1>
+          <p className="text-[14px] text-bn-ink-muted mt-1">Manage your .btc identity portfolio.</p>
         </div>
         <Link href="/app/search" className="button button-primary text-[13px] px-5 py-2.5 rounded-full">+ Register Name</Link>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         {MOCK_OWNED_NAMES.map(n => (
-          <div key={n.name} className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden">
-            <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-bn-border">
+          <div key={n.name} className="bg-white border border-bn-line rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(10,10,10,0.05)]">
+            <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-bn-line">
               <div>
-                <p className="text-[18px] font-medium text-bn-text mb-1.5" style={mono}>{n.name}<span className="text-bn-accent">.btc</span></p>
-                <div className="flex items-center gap-1.5 text-[10px] text-positive-green uppercase tracking-[0.06em]" style={mono}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-positive-green" /> On-chain
+                <p className="font-mono-bn text-[18px] font-medium text-bn-ink mb-1.5">{n.name}<span className="text-bn-accent">.btc</span></p>
+                <div className="flex items-center gap-1.5 font-mono-bn text-[10px] text-green-600 uppercase tracking-[0.06em]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> On-chain
                 </div>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-[0.04em] ${n.isPrimary ? 'bg-bn-accent/10 text-bn-accent' : 'bg-positive-green/10 text-positive-green'}`} style={mono}>
+              <span className={`font-mono-bn text-[10px] px-2 py-0.5 rounded uppercase ${n.isPrimary ? 'bg-bn-accent/10 text-bn-accent' : 'bg-green-50 text-green-700'}`}>
                 {n.isPrimary ? 'Primary' : 'Owned'}
               </span>
             </div>
-
             <div className="px-5 py-4 flex flex-col gap-2">
               {[{icon:'₿',label:'Wallet',val:n.records.wallet},{icon:'⚡',label:'Lightning',val:n.records.lightning},{icon:'🌐',label:'Site',val:n.records.site}].map(r => (
-                <div key={r.label} className="flex items-center gap-2.5 text-[13px]">
-                  <span className="w-4.5 text-center text-bn-accent text-[12px] shrink-0">{r.icon}</span>
-                  <span className="w-16 text-[10px] text-bn-text-dim uppercase tracking-[0.06em] shrink-0" style={mono}>{r.label}</span>
-                  <span className="flex-1 text-[11px] text-bn-text-muted truncate" style={mono}>{r.val || 'Not set'}</span>
-                  <Link href="/app/identity" className="text-[11px] text-bn-accent hover:text-bn-accent-hover opacity-70">Edit</Link>
+                <div key={r.label} className="flex items-center gap-2.5">
+                  <span className="text-bn-accent text-[12px] w-4 text-center shrink-0">{r.icon}</span>
+                  <span className="font-mono-bn text-[10px] text-bn-ink-muted uppercase tracking-[0.06em] w-16 shrink-0">{r.label}</span>
+                  <span className="font-mono-bn text-[11px] text-bn-ink-2 truncate flex-1">{r.val || <span className="text-bn-ink-dim">Not set</span>}</span>
+                  <Link href="/app/identity" className="font-mono-bn text-[11px] text-bn-accent opacity-70 hover:opacity-100">Edit</Link>
                 </div>
               ))}
             </div>
-
-            <div className="px-5 py-3 border-t border-bn-border flex gap-2">
+            <div className="px-5 py-3 border-t border-bn-line flex gap-2">
               <Link href="/app/identity" className="button button-secondary text-[12px] px-3 py-1.5 rounded-full">Manage</Link>
-              <button onClick={() => showToast('Share link copied')} className="button button-secondary text-[12px] px-3 py-1.5 rounded-full">Share</button>
-              {!n.isPrimary && <button onClick={() => showToast('Coming soon')} className="button text-[12px] px-3 py-1.5 rounded-full ml-auto border-negative-red/20 text-negative-red bg-negative-red/5 hover:bg-negative-red/10">List for sale</button>}
+              <button onClick={() => showToast('Copied')} className="button button-secondary text-[12px] px-3 py-1.5 rounded-full">Share</button>
+              {!n.isPrimary && <button onClick={() => showToast('Coming soon')} className="button text-[12px] px-3 py-1.5 rounded-full ml-auto border border-red-200 text-red-500 bg-red-50 hover:bg-red-100">List for sale</button>}
             </div>
           </div>
         ))}
       </div>
-
-      {toast && <div className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-bn-surface border border-positive-green/30 rounded-xl text-[13px] text-bn-text z-50"><span className="text-positive-green">✓</span> {toast}</div>}
+      {toast && <div className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-white border border-bn-line rounded-xl shadow-[0_4px_12px_rgba(10,10,10,0.08)] text-[13px] z-50"><span className="text-green-600">✓</span> {toast}</div>}
     </div>
   )
 }

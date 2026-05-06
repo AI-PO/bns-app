@@ -34,44 +34,34 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  const isActive = (id: string) => {
-    const target = id === '' ? '/app' : `/app/${id}`
-    return pathname === target
-  }
+  const isActive = (id: string) => pathname === (id === '' ? '/app' : `/app/${id}`)
 
   return (
-    <div className="flex h-screen bg-bn-bg text-bn-text overflow-hidden" style={{ fontFamily: 'var(--font-hubot-sans)' }}>
+    <div className="flex h-screen bg-bn-page text-bn-ink overflow-hidden" style={{ fontFamily: 'var(--font-hubot-sans, Inter, sans-serif)' }}>
 
-      {/* ── SIDEBAR ── */}
-      <aside className="w-[232px] shrink-0 border-r border-bn-border bg-bn-surface flex flex-col">
-        {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-bn-border">
-          <Link href="/app">
-            <Image src="/navbar_logo_dark.svg" alt="Bitcoin Names" width={120} height={30} className="h-7 w-auto" />
+      {/* ── SIDEBAR — light ── */}
+      <aside className="w-[232px] shrink-0 border-r border-bn-line bg-bn-page-2 flex flex-col">
+        <div className="h-[68px] flex items-center px-5 border-b border-bn-line">
+          <Link href="/">
+            <Image src="/navbar_logo.svg" alt="Bitcoin Names" width={122} height={31} className="h-[34px] w-auto" />
           </Link>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
-          <p className="text-[10px] font-medium text-bn-text-dim tracking-[0.1em] uppercase px-2 mb-1.5">Main</p>
-          {NAV.slice(0, 3).map(n => (
-            <NavItem key={n.id} n={n} active={isActive(n.id)} />
-          ))}
-          <p className="text-[10px] font-medium text-bn-text-dim tracking-[0.1em] uppercase px-2 mb-1.5 mt-4">My Identity</p>
-          {NAV.slice(3).map(n => (
-            <NavItem key={n.id} n={n} active={isActive(n.id)} />
-          ))}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto">
+          <p className="font-mono-bn text-[10px] uppercase tracking-[0.1em] text-bn-ink-muted px-2 mb-1.5">Main</p>
+          {NAV.slice(0, 3).map(n => <NavItem key={n.id} n={n} active={isActive(n.id)} />)}
+          <p className="font-mono-bn text-[10px] uppercase tracking-[0.1em] text-bn-ink-muted px-2 mb-1.5 mt-4">My Identity</p>
+          {NAV.slice(3).map(n => <NavItem key={n.id} n={n} active={isActive(n.id)} />)}
         </nav>
 
-        {/* Profile */}
-        <div className="px-2.5 py-3 border-t border-bn-border">
-          <Link href="/app/identity" className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-bn-surface-2 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-bn-accent/10 border border-bn-accent/20 flex items-center justify-center text-sm shrink-0 text-bn-accent font-semibold">
+        <div className="px-3 py-3 border-t border-bn-line">
+          <Link href="/app/identity" className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-bn-page-3 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-bn-accent/10 border border-bn-accent/20 flex items-center justify-center text-sm text-bn-accent font-semibold shrink-0">
               {user.username[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-bn-text truncate" style={{ fontFamily: 'var(--font-source-code-pro)' }}>{user.primaryName}</p>
-              <p className="text-[10px] text-bn-text-dim truncate" style={{ fontFamily: 'var(--font-source-code-pro)' }}>{user.address.slice(0, 18)}...</p>
+              <p className="font-mono-bn text-[12px] font-medium text-bn-ink truncate">{user.primaryName}</p>
+              <p className="font-mono-bn text-[10px] text-bn-ink-muted truncate">{user.address.slice(0, 20)}...</p>
             </div>
           </Link>
         </div>
@@ -80,38 +70,33 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* ── MAIN ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        {/* Topbar */}
-        <header className="h-14 shrink-0 border-b border-bn-border bg-bn-surface flex items-center gap-4 px-5">
-          {/* Search */}
-          <div className="flex-1 max-w-[380px] flex items-center gap-2 px-3.5 py-2 bg-bn-bg border border-bn-border rounded-xl focus-within:border-bn-accent/40 transition-colors">
-            <span className="text-bn-text-dim text-[13px]">⌕</span>
+        {/* Topbar — light */}
+        <header className="h-[68px] shrink-0 border-b border-bn-line bg-bn-page flex items-center gap-4 px-5">
+          <div className="flex-1 max-w-[400px] flex items-center gap-2.5 px-3.5 py-2 bg-bn-page-2 border border-bn-line-2 rounded-xl focus-within:border-bn-ink/30 focus-within:ring-2 focus-within:ring-bn-ink/5 transition-all">
+            <span className="text-bn-ink-muted text-[13px]">⌕</span>
             <input
               value={topSearch}
               onChange={e => setTopSearch(e.target.value)}
               onKeyDown={handleTopSearch}
               placeholder="search names..."
-              className="flex-1 bg-transparent border-none outline-none text-[13px] text-bn-text placeholder-bn-text-dim"
-              style={{ fontFamily: 'var(--font-source-code-pro)' }}
+              className="flex-1 bg-transparent border-none outline-none font-mono-bn text-[13px] text-bn-ink placeholder-bn-ink-dim"
             />
-            <span className="text-bn-accent text-[12px]" style={{ fontFamily: 'var(--font-source-code-pro)' }}>.btc</span>
+            <span className="font-mono-bn text-[12px] text-bn-accent">.btc</span>
           </div>
 
           <div className="ml-auto flex items-center gap-2.5">
-            {/* Connected pill */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-bn-bg border border-bn-border rounded-full text-[12px] text-bn-text-muted" style={{ fontFamily: 'var(--font-source-code-pro)' }}>
-              <div className="w-1.5 h-1.5 rounded-full bg-positive-green" />
-              {user.address.slice(0, 12)}...
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-bn-page-2 border border-bn-line-2 rounded-full font-mono-bn text-[12px] text-bn-ink-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              {user.address.slice(0, 14)}...
             </div>
-            <button
-              onClick={() => { logout(); router.push('/login') }}
-              className="px-3 py-1.5 text-[12px] text-bn-text-dim border border-bn-border rounded-full hover:border-bn-border-mid hover:text-bn-text-muted transition-colors">
+            <button onClick={() => { logout(); router.push('/') }}
+              className="px-3.5 py-1.5 font-mono-bn text-[12px] text-bn-ink-muted border border-bn-line rounded-full hover:border-bn-line-2 hover:text-bn-ink transition-colors">
               Log out
             </button>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-bn-page">
           {children}
         </main>
       </div>
@@ -121,21 +106,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 function NavItem({ n, active }: { n: typeof NAV[0]; active: boolean }) {
   return (
-    <Link
-      href={n.id === '' ? '/app' : `/app/${n.id}`}
-      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 text-[14px] transition-colors relative ${
+    <Link href={n.id === '' ? '/app' : `/app/${n.id}`}
+      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 text-[14px] transition-colors relative no-underline ${
         active
-          ? 'bg-bn-accent/8 text-bn-text border border-bn-accent/15'
-          : 'text-bn-text-muted hover:bg-bn-surface-2 hover:text-bn-text'
-      }`}
-    >
+          ? 'bg-bn-accent/8 text-bn-ink border border-bn-accent/15'
+          : 'text-bn-ink-muted hover:bg-bn-page-3 hover:text-bn-ink'
+      }`}>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-[55%] bg-bn-accent rounded-r" />}
       <span className="w-5 text-center text-[15px] shrink-0">{n.icon}</span>
       <span className="flex-1">{n.label}</span>
       {n.badge && (
-        <span className="px-1.5 py-0.5 bg-bn-accent/10 rounded-full text-[10px] text-bn-accent" style={{ fontFamily: 'var(--font-source-code-pro)' }}>
-          {n.badge}
-        </span>
+        <span className="px-1.5 py-0.5 bg-bn-accent/10 rounded-full font-mono-bn text-[10px] text-bn-accent">{n.badge}</span>
       )}
     </Link>
   )
