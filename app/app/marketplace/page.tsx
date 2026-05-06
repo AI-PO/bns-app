@@ -1,96 +1,69 @@
 'use client'
-
 import { useState } from 'react'
 import { MOCK_MARKETPLACE } from '@/lib/mock-data'
 
-type Filter = 'all' | '4char' | '5char' | 'premium' | 'new'
-
+type Filter = 'all'|'4char'|'5char'|'premium'|'new'
+const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
 const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all',     label: 'All names' },
-  { id: '4char',   label: '4-char' },
-  { id: '5char',   label: '5-char' },
-  { id: 'premium', label: 'Premium' },
-  { id: 'new',     label: 'New listings' },
+  { id: 'all', label: 'All names' }, { id: '4char', label: '4-char' },
+  { id: '5char', label: '5-char' }, { id: 'premium', label: 'Premium' }, { id: 'new', label: 'New listings' },
 ]
-
-type BuyState = { name: string; price: number } | null
 
 export default function MarketplacePage() {
   const [filter, setFilter] = useState<Filter>('all')
-  const [buying, setBuying] = useState<BuyState>(null)
+  const [buying, setBuying] = useState<{ name: string; price: number } | null>(null)
   const [bought, setBought] = useState<string[]>([])
-  const [toast,  setToast]  = useState('')
+  const [toast, setToast] = useState('')
 
   const filtered = MOCK_MARKETPLACE.filter(m => {
-    if (filter === '4char')   return m.chars === 4
-    if (filter === '5char')   return m.chars === 5
+    if (filter === '4char') return m.chars === 4
+    if (filter === '5char') return m.chars === 5
     if (filter === 'premium') return m.category === 'premium' || m.chars <= 4
-    if (filter === 'new')     return m.category === 'new'
+    if (filter === 'new') return m.category === 'new'
     return true
   })
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
-
-  const confirmBuy = () => {
-    if (!buying) return
-    setBought(b => [...b, buying.name])
-    setBuying(null)
-    showToast(`${buying.name}.btc purchased successfully!`)
-  }
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  const confirmBuy = () => { if (!buying) return; setBought(b => [...b, buying.name]); showToast(`${buying.name}.btc purchased!`); setBuying(null) }
 
   return (
-    <div style={page}>
-      <div style={hdr}>
+    <div className="p-7">
+      <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h1 style={titleStyle}>Marketplace</h1>
-          <p style={sub}>Browse, buy, and bid on premium .btc names.</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-bn-text">Marketplace</h1>
+          <p className="text-[14px] text-bn-text-muted mt-1">Browse, buy, and bid on premium .btc names.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={btnGhost}>Sort: Price ↓</button>
-          <button style={btnGhost}>Filter</button>
+        <div className="flex gap-2">
+          <button className="button button-secondary text-[13px] px-4 py-2 rounded-full">Sort: Price ↓</button>
+          <button className="button button-secondary text-[13px] px-4 py-2 rounded-full">Filter</button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="flex gap-2 mb-5 flex-wrap">
         {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} style={{
-            padding: '7px 16px',
-            background: filter === f.id ? 'rgba(247,147,26,0.12)' : '#161614',
-            border: `1px solid ${filter === f.id ? '#f7931a' : '#232320'}`,
-            borderRadius: 8, fontFamily: 'monospace', fontSize: 12,
-            color: filter === f.id ? '#f7931a' : '#8a8778',
-            cursor: 'pointer',
-          }}>{f.label}</button>
+          <button key={f.id} onClick={() => setFilter(f.id)}
+            className={`px-4 py-1.5 rounded-full text-[12px] border transition-colors ${filter === f.id ? 'bg-bn-accent/10 border-bn-accent/30 text-bn-accent' : 'bg-bn-surface border-bn-border text-bn-text-muted hover:border-bn-border-mid'}`}
+            style={mono}>
+            {f.label}
+          </button>
         ))}
       </div>
 
-      {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+      <div className="grid grid-cols-3 gap-3">
         {filtered.map(m => (
-          <div key={m.name} style={{
-            padding: 20, background: '#111110',
-            border: `1px solid ${bought.includes(m.name) ? '#4caf7d' : '#232320'}`,
-            borderRadius: 12, transition: 'border-color 0.2s',
-          }}>
-            <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 500, marginBottom: 3 }}>
-              {m.name}<span style={{ color: '#f7931a' }}>.btc</span>
-              {bought.includes(m.name) && <span style={{ marginLeft: 8, fontSize: 10, color: '#4caf7d', background: 'rgba(76,175,125,0.1)', padding: '2px 6px', borderRadius: 4 }}>OWNED</span>}
-            </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
-              {m.chars} chars · Orobit SCL
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, borderTop: '1px solid #232320' }}>
+          <div key={m.name} className={`bg-bn-surface border rounded-xl p-5 transition-colors ${bought.includes(m.name) ? 'border-positive-green/30' : 'border-bn-border hover:border-bn-border-mid'}`}>
+            <p className="text-[16px] font-medium text-bn-text mb-0.5" style={mono}>{m.name}<span className="text-bn-accent">.btc</span>
+              {bought.includes(m.name) && <span className="ml-2 text-[10px] bg-positive-green/10 text-positive-green px-1.5 py-0.5 rounded" style={mono}>OWNED</span>}
+            </p>
+            <p className="text-[10px] text-bn-text-dim uppercase tracking-[0.06em] mb-4" style={mono}>{m.chars} chars · Orobit SCL</p>
+            <div className="flex items-center justify-between pt-3.5 border-t border-bn-border">
               <div>
-                <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.03em' }}>{m.price} BTC</div>
-                <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#4caf7d' }}>{m.change} (7d)</div>
+                <p className="text-[16px] font-semibold tracking-[-0.03em] text-bn-text">{m.price} BTC</p>
+                <p className="text-[11px] text-positive-green" style={mono}>{m.change} (7d)</p>
               </div>
               {bought.includes(m.name)
-                ? <span style={{ fontSize: 12, color: '#4caf7d' }}>✓ Yours</span>
-                : <button onClick={() => setBuying({ name: m.name, price: m.price })} style={btnAccent}>Buy</button>
+                ? <span className="text-[12px] text-positive-green" style={mono}>✓ Yours</span>
+                : <button onClick={() => setBuying({ name: m.name, price: m.price })} className="button button-cta text-[13px] px-4 py-2 rounded-full">Buy</button>
               }
             </div>
           </div>
@@ -99,51 +72,35 @@ export default function MarketplacePage() {
 
       {/* Buy modal */}
       {buying && (
-        <div style={overlay}>
-          <div style={modal}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 800 }}>Buy <span style={{ color: '#f7931a' }}>{buying.name}</span>.btc</h2>
-              <button onClick={() => setBuying(null)} style={{ background: 'none', border: 'none', color: '#8a8778', cursor: 'pointer', fontSize: 18 }}>✕</button>
+        <div className="fixed inset-0 dialog-overlay flex items-center justify-center z-50">
+          <div className="dialog-content w-[440px] p-7 bg-white rounded-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[18px] font-semibold tracking-[-0.02em]">Buy <span className="text-bn-accent">{buying.name}</span>.btc</h2>
+              <button onClick={() => setBuying(null)} className="text-bn-ink-muted hover:text-bn-ink text-lg">✕</button>
             </div>
-            {[
-              ['Listing price',    `${buying.price} BTC`],
-              ['Platform fee (2.5%)', `${(buying.price * 0.025).toFixed(5)} BTC`],
-              ['Network fee (est.)', '~0.00012 BTC'],
-            ].map(([l, v]) => (
-              <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderBottom: '1px solid #232320', fontSize: 14 }}>
-                <span style={{ color: '#8a8778' }}>{l}</span>
-                <span style={{ fontFamily: 'monospace', fontSize: 13 }}>{v}</span>
+            {[['Listing price',`${buying.price} BTC`],['Platform fee (2.5%)',`${(buying.price*0.025).toFixed(5)} BTC`],['Network fee (est.)','~0.00012 BTC']].map(([l,v]) => (
+              <div key={l} className="flex justify-between py-2.5 border-b border-bn-line text-[14px]">
+                <span className="text-bn-ink-muted">{l}</span>
+                <span style={mono} className="text-bn-ink text-[13px]">{v}</span>
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '13px 0', fontSize: 14 }}>
-              <span style={{ fontWeight: 600 }}>Total</span>
-              <span style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: '#f7931a' }}>
-                {(buying.price * 1.025 + 0.00012).toFixed(5)} BTC
-              </span>
+            <div className="flex justify-between py-3 text-[14px]">
+              <span className="font-semibold text-bn-ink">Total</span>
+              <span className="text-bn-accent font-semibold text-[15px]" style={mono}>{(buying.price*1.025+0.00012).toFixed(5)} BTC</span>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-              <button onClick={() => setBuying(null)} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
-              <button onClick={confirmBuy} style={{ ...btnAccent, flex: 1, justifyContent: 'center' }}>Confirm Purchase</button>
+            <div className="flex gap-2.5 mt-2">
+              <button onClick={() => setBuying(null)} className="button button-secondary flex-1 py-3 rounded-xl text-[13px]">Cancel</button>
+              <button onClick={confirmBuy} className="button button-cta flex-1 py-3 rounded-xl text-[14px]">Confirm Purchase</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, padding: '12px 20px', background: '#161614', border: '1px solid rgba(76,175,125,0.3)', borderRadius: 10, fontSize: 13, color: '#f0ede6', display: 'flex', alignItems: 'center', gap: 8, zIndex: 200 }}>
-          <span style={{ color: '#4caf7d' }}>✓</span> {toast}
+        <div className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-bn-surface border border-positive-green/30 rounded-xl text-[13px] text-bn-text z-50 shadow-lg">
+          <span className="text-positive-green">✓</span> {toast}
         </div>
       )}
     </div>
   )
 }
-
-const page: React.CSSProperties = { padding: 28, color: '#f0ede6' }
-const hdr: React.CSSProperties  = { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }
-const titleStyle: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em' }
-const sub: React.CSSProperties  = { fontSize: 14, color: '#8a8778', marginTop: 4 }
-const btnAccent: React.CSSProperties = { padding: '8px 18px', background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }
-const btnGhost: React.CSSProperties  = { padding: '8px 14px', background: 'transparent', border: '1px solid #232320', borderRadius: 8, color: '#8a8778', cursor: 'pointer', fontSize: 13 }
-const overlay: React.CSSProperties   = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
-const modal: React.CSSProperties     = { width: 460, background: '#161614', border: '1px solid #2e2e2a', borderRadius: 18, padding: 28, color: '#f0ede6' }

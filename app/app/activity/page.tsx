@@ -1,39 +1,32 @@
 'use client'
-
 import { MOCK_ACTIVITY } from '@/lib/mock-data'
+
+const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
 
 export default function ActivityPage() {
   return (
-    <div style={{ padding: 28, color: '#f0ede6' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em' }}>Activity</h1>
-        <p style={{ fontSize: 14, color: '#8a8778', marginTop: 4 }}>On-chain history for your wallet.</p>
+    <div className="p-7">
+      <div className="mb-6">
+        <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-bn-text">Activity</h1>
+        <p className="text-[14px] text-bn-text-muted mt-1">On-chain history for your wallet.</p>
       </div>
-
-      <div style={{ background: '#111110', border: '1px solid #232320', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #232320' }}>
-          <span style={{ fontWeight: 700, fontSize: 13 }}>All transactions</span>
-          <button style={{ background: 'none', border: 'none', color: '#f7931a', cursor: 'pointer', fontSize: 12 }}>Export CSV</button>
+      <div className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-bn-border">
+          <span className="text-[13px] font-semibold text-bn-text">All transactions</span>
+          <button className="text-[12px] text-bn-accent hover:text-bn-accent-hover">Export CSV</button>
         </div>
-
         {MOCK_ACTIVITY.map((a, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: i < MOCK_ACTIVITY.length - 1 ? '1px solid #232320' : 'none' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: a.type === 'register' ? 'rgba(247,147,26,0.12)' : 'rgba(76,175,125,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-              {a.type === 'register' ? '₿' : '✎'}
+          <div key={i} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < MOCK_ACTIVITY.length-1 ? 'border-b border-bn-border' : ''}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[13px] shrink-0 ${a.type==='register' ? 'bg-bn-accent/10' : 'bg-positive-green/10'}`}>
+              {a.type==='register' ? '₿' : '✎'}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13 }}>
-                {a.type === 'register' ? 'Registered ' : 'Updated records on '}
-                <strong>{a.name}</strong>
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#5a5850', marginTop: 3 }}>
-                {a.time} · Block #{a.block}
-                {a.txid && <> · <span style={{ color: '#f7931a' }}>txid: {a.txid}</span></>}
-              </div>
+            <div className="flex-1">
+              <p className="text-[13px] text-bn-text">{a.type==='register' ? 'Registered ' : 'Updated records on '}<strong>{a.name}</strong></p>
+              <p className="text-[11px] text-bn-text-dim mt-0.5" style={mono}>
+                {a.time} · Block #{a.block}{a.txid && <> · <span className="text-bn-accent">txid: {a.txid}</span></>}
+              </p>
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 12, color: a.amount.startsWith('-') ? '#f7931a' : '#4caf7d' }}>
-              {a.amount}
-            </div>
+            <span className="text-[12px] text-bn-accent" style={mono}>{a.amount}</span>
           </div>
         ))}
       </div>

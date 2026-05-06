@@ -1,90 +1,60 @@
 'use client'
-
 import { useState } from 'react'
 import Link from 'next/link'
 import { MOCK_OWNED_NAMES } from '@/lib/mock-data'
 
-export default function MyNamesPage() {
-  const [names, setNames] = useState(MOCK_OWNED_NAMES)
-  const [toast, setToast] = useState('')
+const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+export default function MyNamesPage() {
+  const [toast, setToast] = useState('')
+  const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000) }
 
   return (
-    <div style={page}>
-      <div style={hdr}>
+    <div className="p-7">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 style={titleStyle}>My Names</h1>
-          <p style={sub}>Manage your .btc identity portfolio.</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-bn-text">My Names</h1>
+          <p className="text-[14px] text-bn-text-muted mt-1">Manage your .btc identity portfolio.</p>
         </div>
-        <Link href="/app/search" style={btnAccent}>+ Register Name</Link>
+        <Link href="/app/search" className="button button-primary text-[13px] px-5 py-2.5 rounded-full">+ Register Name</Link>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-        {names.map((n, i) => (
-          <div key={n.name} style={card}>
-            {/* Header */}
-            <div style={{ padding: '18px 18px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid #232320' }}>
+      <div className="grid grid-cols-3 gap-4">
+        {MOCK_OWNED_NAMES.map(n => (
+          <div key={n.name} className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden">
+            <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-bn-border">
               <div>
-                <div style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 500, marginBottom: 5 }}>
-                  {n.name}<span style={{ color: '#f7931a' }}>.btc</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'monospace', fontSize: 10, color: '#4caf7d', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4caf7d' }} />
-                  On-chain
+                <p className="text-[18px] font-medium text-bn-text mb-1.5" style={mono}>{n.name}<span className="text-bn-accent">.btc</span></p>
+                <div className="flex items-center gap-1.5 text-[10px] text-positive-green uppercase tracking-[0.06em]" style={mono}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-positive-green" /> On-chain
                 </div>
               </div>
-              <span style={{ padding: '3px 9px', borderRadius: 5, fontFamily: 'monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em',
-                background: n.isPrimary ? 'rgba(247,147,26,0.12)' : 'rgba(76,175,125,0.1)',
-                color: n.isPrimary ? '#f7931a' : '#4caf7d',
-              }}>{n.isPrimary ? 'Primary' : 'Owned'}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-[0.04em] ${n.isPrimary ? 'bg-bn-accent/10 text-bn-accent' : 'bg-positive-green/10 text-positive-green'}`} style={mono}>
+                {n.isPrimary ? 'Primary' : 'Owned'}
+              </span>
             </div>
 
-            {/* Records */}
-            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {[
-                { icon: '₿', label: 'Wallet',    val: n.records.wallet },
-                { icon: '⚡', label: 'Lightning', val: n.records.lightning },
-                { icon: '🌐', label: 'Site',      val: n.records.site },
-              ].map(r => (
-                <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}>
-                  <span style={{ width: 18, textAlign: 'center', color: '#f7931a', fontSize: 12 }}>{r.icon}</span>
-                  <span style={{ width: 64, fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{r.label}</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: r.val ? '#8a8778' : '#3a3a38', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                    {r.val || 'Not set'}
-                  </span>
-                  <Link href="/app/identity" style={{ fontSize: 11, color: '#f7931a', textDecoration: 'none', opacity: 0.7 }}>Edit</Link>
+            <div className="px-5 py-4 flex flex-col gap-2">
+              {[{icon:'₿',label:'Wallet',val:n.records.wallet},{icon:'⚡',label:'Lightning',val:n.records.lightning},{icon:'🌐',label:'Site',val:n.records.site}].map(r => (
+                <div key={r.label} className="flex items-center gap-2.5 text-[13px]">
+                  <span className="w-4.5 text-center text-bn-accent text-[12px] shrink-0">{r.icon}</span>
+                  <span className="w-16 text-[10px] text-bn-text-dim uppercase tracking-[0.06em] shrink-0" style={mono}>{r.label}</span>
+                  <span className="flex-1 text-[11px] text-bn-text-muted truncate" style={mono}>{r.val || 'Not set'}</span>
+                  <Link href="/app/identity" className="text-[11px] text-bn-accent hover:text-bn-accent-hover opacity-70">Edit</Link>
                 </div>
               ))}
             </div>
 
-            {/* Actions */}
-            <div style={{ padding: '11px 18px', display: 'flex', gap: 8, borderTop: '1px solid #232320' }}>
-              <Link href="/app/identity" style={btnGhost}>Manage</Link>
-              <button onClick={() => showToast('Share link copied')} style={btnGhost}>Share</button>
-              {!n.isPrimary && (
-                <button onClick={() => showToast('List for sale — coming soon')} style={{ ...btnGhost, marginLeft: 'auto', color: '#e05a3a', borderColor: 'rgba(224,90,58,0.2)' }}>
-                  List for sale
-                </button>
-              )}
+            <div className="px-5 py-3 border-t border-bn-border flex gap-2">
+              <Link href="/app/identity" className="button button-secondary text-[12px] px-3 py-1.5 rounded-full">Manage</Link>
+              <button onClick={() => showToast('Share link copied')} className="button button-secondary text-[12px] px-3 py-1.5 rounded-full">Share</button>
+              {!n.isPrimary && <button onClick={() => showToast('Coming soon')} className="button text-[12px] px-3 py-1.5 rounded-full ml-auto border-negative-red/20 text-negative-red bg-negative-red/5 hover:bg-negative-red/10">List for sale</button>}
             </div>
           </div>
         ))}
       </div>
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, padding: '12px 20px', background: '#161614', border: '1px solid rgba(76,175,125,0.3)', borderRadius: 10, fontSize: 13, color: '#f0ede6', display: 'flex', gap: 8, zIndex: 200 }}>
-          <span style={{ color: '#4caf7d' }}>✓</span> {toast}
-        </div>
-      )}
+      {toast && <div className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-bn-surface border border-positive-green/30 rounded-xl text-[13px] text-bn-text z-50"><span className="text-positive-green">✓</span> {toast}</div>}
     </div>
   )
 }
-
-const page: React.CSSProperties = { padding: 28, color: '#f0ede6' }
-const hdr: React.CSSProperties  = { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }
-const titleStyle: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em' }
-const sub: React.CSSProperties  = { fontSize: 14, color: '#8a8778', marginTop: 4 }
-const card: React.CSSProperties = { background: '#111110', border: '1px solid #232320', borderRadius: 14, overflow: 'hidden' }
-const btnAccent: React.CSSProperties = { padding: '9px 18px', background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }
-const btnGhost: React.CSSProperties  = { padding: '6px 12px', background: 'transparent', border: '1px solid #232320', borderRadius: 7, color: '#8a8778', cursor: 'pointer', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }

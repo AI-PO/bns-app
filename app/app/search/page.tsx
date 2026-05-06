@@ -1,203 +1,164 @@
 'use client'
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { TAKEN_NAMES, getNamePrice, getNameType } from '@/lib/mock-data'
-import { useAuth } from '@/lib/auth'
 
-type State = 'idle' | 'checking' | 'available' | 'taken'
-type Step  = 1 | 2 | 3
+const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
 
-export default function SearchPage() {
-  const { user } = useAuth()
+function SearchContent() {
   const params = useSearchParams()
-  const [raw,    setRaw]    = useState(params.get('q') || '')
-  const [state,  setState]  = useState<State>('idle')
-  const [step,   setStep]   = useState<Step>(1)
+  const [raw, setRaw]     = useState(params.get('q') || '')
+  const [status, setStatus] = useState<'idle'|'checking'|'available'|'taken'>('idle')
+  const [step, setStep]   = useState<1|2|3>(1)
   const [inFlow, setInFlow] = useState(false)
-  const [records, setRecords] = useState({ wallet: user?.address || '', lightning: '', site: '', twitter: '' })
+  const [records, setRecords] = useState({ wallet: 'bc1q9xj7fkn3d8r2p...mock', lightning: '', site: '', twitter: '' })
 
   const name = raw.toLowerCase().replace(/\.btc$/, '').trim()
 
-  useEffect(() => {
-    if (params.get('q')) { setTimeout(check, 100) }
-  }, [])
+  useEffect(() => { if (params.get('q')) setTimeout(check, 100) }, [])
 
   function check() {
     if (!name) return
-    setState('checking')
-    setTimeout(() => setState(TAKEN_NAMES.includes(name) ? 'taken' : 'available'), 600)
-    setInFlow(false)
-    setStep(1)
+    setStatus('checking'); setInFlow(false); setStep(1)
+    setTimeout(() => setStatus(TAKEN_NAMES.includes(name) ? 'taken' : 'available'), 600)
   }
-
-  function startBuy() { setInFlow(true); setStep(1) }
-  function cancelBuy() { setInFlow(false) }
-  function goStep2() { setStep(2) }
-  function goStep3() { setStep(3) }
 
   const price = getNamePrice(name)
   const type  = getNameType(name)
 
+  const RECORD_FIELDS = [
+    { icon: '₿', label: 'Wallet',    key: 'wallet',    ph: 'bc1q...' },
+    { icon: '⚡', label: 'Lightning', key: 'lightning', ph: 'yourname@lightning.node' },
+    { icon: '🌐', label: 'Site',      key: 'site',      ph: 'ipfs://... or https://...' },
+    { icon: '𝕏', label: 'Twitter',   key: 'twitter',   ph: '@handle' },
+  ]
+
   return (
-    <div style={page}>
+    <div className="p-7 max-w-[680px]">
+      <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-bn-text text-center mb-6">
+        Find your name on <span className="text-bn-accent">Bitcoin</span>.
+      </h1>
+
       {/* Search bar */}
-      <div style={{ maxWidth: 600, margin: '0 auto', paddingBottom: 40 }}>
-        <h1 style={{ ...title, textAlign: 'center', marginBottom: 24 }}>
-          Find your name on <span style={{ color: '#f7931a' }}>Bitcoin</span>.
-        </h1>
-        <div style={{ display: 'flex', alignItems: 'center', background: '#161614', border: '1px solid #2e2e2a', borderRadius: 14, padding: '8px 8px 8px 18px', gap: 10 }}>
-          <input
-            value={raw}
-            onChange={e => { setRaw(e.target.value); setState('idle'); setInFlow(false) }}
-            onKeyDown={e => e.key === 'Enter' && check()}
-            placeholder="yourname"
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: 'monospace', fontSize: 18, color: '#f0ede6' }}
-            autoFocus
-          />
-          <span style={{ fontFamily: 'monospace', fontSize: 16, color: '#f7931a' }}>.btc</span>
-          <button onClick={check} style={{ padding: '11px 22px', background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-            Search →
-          </button>
-        </div>
-
-        {/* Result */}
-        {state === 'checking' && <p style={{ marginTop: 12, fontFamily: 'monospace', fontSize: 13, color: '#8a8778' }}>⏳ Checking on Bitcoin...</p>}
-
-        {state === 'available' && !inFlow && (
-          <div style={{ marginTop: 14, padding: 20, background: '#161614', border: '1px solid rgba(76,175,125,0.3)', borderRadius: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: '#f0ede6' }}>{name}<span style={{ color: '#f7931a' }}>.btc</span></span>
-              <span style={{ background: 'rgba(76,175,125,0.1)', color: '#4caf7d', padding: '5px 12px', borderRadius: 8, fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>✓ Available</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
-              {[['Price', price], ['Length', `${name.length} chars`], ['Type', type]].map(([l, v]) => (
-                <div key={l} style={{ padding: '12px 14px', background: '#0a0a08', borderRadius: 9 }}>
-                  <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>{l}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{v}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={startBuy} style={{ flex: 1, padding: 13, background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-                Buy {name}.btc →
-              </button>
-              <button style={{ padding: '13px 18px', background: 'transparent', border: '1px solid #232320', borderRadius: 10, color: '#8a8778', cursor: 'pointer', fontSize: 13 }}>
-                + Watchlist
-              </button>
-            </div>
-          </div>
-        )}
-
-        {state === 'taken' && (
-          <div style={{ marginTop: 14, padding: 18, background: '#161614', border: '1px solid rgba(224,90,58,0.2)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 15 }}>{name}<span style={{ color: '#f7931a' }}>.btc</span> <span style={{ color: '#8a8778', fontSize: 13 }}>is taken</span></span>
-            <button style={{ padding: '7px 14px', background: '#161614', border: '1px solid #2e2e2a', borderRadius: 8, color: '#f7931a', cursor: 'pointer', fontSize: 13 }}>
-              View on Marketplace →
-            </button>
-          </div>
-        )}
+      <div className="flex items-center bg-bn-surface border border-bn-border rounded-2xl px-5 py-2 gap-3 focus-within:border-bn-accent/40 transition-colors mb-4">
+        <input value={raw} onChange={e => { setRaw(e.target.value); setStatus('idle'); setInFlow(false) }}
+          onKeyDown={e => e.key === 'Enter' && check()}
+          placeholder="yourname" autoFocus
+          className="flex-1 bg-transparent border-none outline-none text-[18px] text-bn-text placeholder-bn-text-dim"
+          style={mono} />
+        <span className="text-bn-accent text-[16px]" style={mono}>.btc</span>
+        <button onClick={check} className="button button-primary text-[14px] px-6 py-2.5 rounded-xl">Search →</button>
       </div>
 
-      {/* ── Buy flow ── */}
-      {inFlow && state === 'available' && (
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
+      {status === 'checking' && <p className="text-[13px] text-bn-text-muted mb-4" style={mono}>⏳ Checking on Bitcoin...</p>}
+
+      {status === 'available' && !inFlow && (
+        <div className="bg-bn-surface border border-positive-green/30 rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[22px] font-semibold text-bn-text tracking-[-0.03em]" style={mono}>{name}<span className="text-bn-accent">.btc</span></span>
+            <span className="bg-positive-green/10 text-positive-green px-3 py-1 rounded-lg text-[12px] font-semibold" style={mono}>✓ Available</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5 mb-4">
+            {[['Price', price], ['Length', `${name.length} chars`], ['Type', type]].map(([l, v]) => (
+              <div key={l} className="bg-bn-bg rounded-xl px-3.5 py-3">
+                <p className="text-[10px] text-bn-text-dim uppercase tracking-[0.08em] mb-1" style={mono}>{l}</p>
+                <p className="text-[15px] font-semibold text-bn-text">{v}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2.5">
+            <button onClick={() => setInFlow(true)} className="button button-primary flex-1 text-[15px] py-3.5 rounded-xl">Buy {name}.btc →</button>
+            <button className="button button-secondary text-[13px] px-4 py-3.5 rounded-xl">+ Watchlist</button>
+          </div>
+        </div>
+      )}
+
+      {status === 'taken' && (
+        <div className="bg-bn-surface border border-negative-red/20 rounded-2xl p-4 flex items-center justify-between mb-4">
+          <span style={mono} className="text-[15px]">{name}<span className="text-bn-accent">.btc</span> <span className="text-bn-text-muted text-[13px]">is taken</span></span>
+          <button className="button button-secondary text-[13px] px-4 py-2 rounded-xl">View on Marketplace →</button>
+        </div>
+      )}
+
+      {/* Buy flow */}
+      {inFlow && status === 'available' && (
+        <div>
           {/* Stepper */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
-            {([1,2,3] as Step[]).map((s, i) => (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0,
-                  background: step > s ? '#4caf7d' : step === s ? '#f7931a' : '#161614',
-                  color: step >= s ? '#0a0a08' : '#5a5850',
-                  border: step < s ? '1px solid #2e2e2a' : 'none',
-                }}>
+          <div className="flex items-center mb-7">
+            {([1,2,3] as const).map((s, i) => (
+              <div key={s} className="flex items-center flex-1">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 ${step > s ? 'bg-positive-green text-bn-bg' : step === s ? 'bg-bn-accent text-bn-bg' : 'bg-bn-surface border border-bn-border text-bn-text-dim'}`}>
                   {step > s ? '✓' : s}
                 </div>
-                <span style={{ marginLeft: 8, fontSize: 12, color: step === s ? '#f0ede6' : '#5a5850', whiteSpace: 'nowrap' }}>
-                  {['Confirm', 'Set Records', 'Complete'][s - 1]}
+                <span className={`ml-2 text-[12px] whitespace-nowrap ${step === s ? 'text-bn-text' : 'text-bn-text-dim'}`}>
+                  {['Confirm','Set Records','Complete'][s-1]}
                 </span>
-                {i < 2 && <div style={{ flex: 1, height: 1, background: step > s ? '#4caf7d' : '#2e2e2a', margin: '0 8px' }} />}
+                {i < 2 && <div className={`flex-1 h-px mx-2 ${step > s ? 'bg-positive-green' : 'bg-bn-border'}`} />}
               </div>
             ))}
           </div>
 
-          {/* Step 1 */}
           {step === 1 && (
             <div>
-              <div style={flowCard}>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Confirm registration</h2>
-                <p style={{ fontSize: 14, color: '#8a8778' }}>{name}.btc</p>
+              <div className="bg-bn-surface border border-bn-border rounded-2xl p-5 mb-3">
+                <h2 className="text-[16px] font-semibold mb-1 text-bn-text">Confirm registration</h2>
+                <p className="text-[14px] text-bn-text-muted" style={mono}>{name}.btc</p>
               </div>
-              <div style={{ ...flowCard, display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {[
-                  ['Name', `${name}.btc`, '#f7931a'],
-                  ['Registration fee', price, '#f0ede6'],
-                  ['Network fee (est.)', '~0.00012 BTC', '#f0ede6'],
-                  ['Protocol', 'Orobit SCL · Bitcoin L1', '#f0ede6'],
-                  ['Total', price, '#f7931a'],
-                ].map(([l, v, c]) => (
-                  <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderBottom: l === 'Total' ? 'none' : '1px solid #232320' }}>
-                    <span style={{ color: '#8a8778', fontSize: 14 }}>{l}</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: 13, color: c }}>{v}</span>
+              <div className="bg-bn-surface border border-bn-border rounded-2xl p-5 mb-4">
+                {[['Name',`${name}.btc`,'text-bn-accent'],['Registration fee',price,'text-bn-text'],['Network fee','~0.00012 BTC','text-bn-text'],['Protocol','Orobit SCL · Bitcoin L1','text-bn-text'],['Total',price,'text-bn-accent font-semibold']].map(([l,v,cls]) => (
+                  <div key={l} className="flex justify-between py-2.5 border-b border-bn-border last:border-0 text-[14px]">
+                    <span className="text-bn-text-muted">{l}</span>
+                    <span className={`${cls}`} style={mono}>{v}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={cancelBuy} style={btnGhost}>Cancel</button>
-                <button onClick={goStep2} style={{ ...btnAccent, flex: 1 }}>Confirm & Continue →</button>
+              <div className="flex gap-2.5">
+                <button onClick={() => setInFlow(false)} className="button button-secondary px-5 py-3 rounded-xl text-[13px]">Cancel</button>
+                <button onClick={() => setStep(2)} className="button button-primary flex-1 py-3.5 rounded-xl text-[15px]">Confirm & Continue →</button>
               </div>
             </div>
           )}
 
-          {/* Step 2 */}
           {step === 2 && (
             <div>
-              <div style={flowCard}>
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Set your records</h2>
-                <p style={{ fontSize: 14, color: '#8a8778' }}>Map your name to what it resolves to. You can update these any time.</p>
+              <div className="bg-bn-surface border border-bn-border rounded-2xl p-5 mb-3">
+                <h2 className="text-[16px] font-semibold mb-1 text-bn-text">Set your records</h2>
+                <p className="text-[14px] text-bn-text-muted">Map your name to what it resolves to. Update any time.</p>
               </div>
-              <div style={flowCard}>
-                {[
-                  { icon: '₿', label: 'Wallet', key: 'wallet', ph: 'bc1q...' },
-                  { icon: '⚡', label: 'Lightning', key: 'lightning', ph: 'yourname@lightning.node' },
-                  { icon: '🌐', label: 'Site', key: 'site', ph: 'ipfs://... or https://...' },
-                  { icon: '𝕏', label: 'Twitter', key: 'twitter', ph: '@handle' },
-                ].map(f => (
-                  <div key={f.key} style={{ display: 'flex', alignItems: 'center', background: '#0a0a08', border: '1px solid #232320', borderRadius: 9, overflow: 'hidden', marginBottom: 8 }}>
-                    <div style={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, borderRight: '1px solid #232320', flexShrink: 0 }}>{f.icon}</div>
-                    <div style={{ width: 76, padding: '0 10px', fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.06em', borderRight: '1px solid #232320', flexShrink: 0 }}>{f.label}</div>
-                    <input
-                      value={records[f.key as keyof typeof records]}
-                      onChange={e => setRecords(r => ({ ...r, [f.key]: e.target.value }))}
+              <div className="bg-bn-surface border border-bn-border rounded-2xl overflow-hidden mb-4">
+                {RECORD_FIELDS.map(f => (
+                  <div key={f.key} className="flex items-center border-b border-bn-border last:border-0">
+                    <div className="w-11 h-11 flex items-center justify-center text-base border-r border-bn-border shrink-0">{f.icon}</div>
+                    <div className="w-20 px-3 text-[10px] text-bn-text-dim uppercase tracking-[0.06em] border-r border-bn-border shrink-0" style={mono}>{f.label}</div>
+                    <input value={(records as any)[f.key]} onChange={e => setRecords(r => ({...r,[f.key]:e.target.value}))}
                       placeholder={f.ph}
-                      style={{ flex: 1, padding: '11px 12px', background: 'none', border: 'none', outline: 'none', fontFamily: 'monospace', fontSize: 12, color: '#f0ede6' }}
-                    />
-                    <div style={{ padding: '0 12px', fontSize: 13, color: records[f.key as keyof typeof records] ? '#4caf7d' : '#3a3a38', flexShrink: 0 }}>
-                      {records[f.key as keyof typeof records] ? '✓' : '○'}
+                      className="flex-1 px-3 py-2.5 bg-transparent border-none outline-none text-[12px] text-bn-text placeholder-bn-text-dim"
+                      style={mono} />
+                    <div className={`px-3 text-[13px] ${(records as any)[f.key] ? 'text-positive-green' : 'text-bn-border-light'}`}>
+                      {(records as any)[f.key] ? '✓' : '○'}
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={goStep3} style={btnGhost}>Skip for now</button>
-                <button onClick={goStep3} style={{ ...btnAccent, flex: 1 }}>Save & Register →</button>
+              <div className="flex gap-2.5">
+                <button onClick={() => setStep(3)} className="button button-secondary px-5 py-3 rounded-xl text-[13px]">Skip for now</button>
+                <button onClick={() => setStep(3)} className="button button-primary flex-1 py-3.5 rounded-xl text-[15px]">Save & Register →</button>
               </div>
             </div>
           )}
 
-          {/* Step 3 — Success */}
           {step === 3 && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(76,175,125,0.1)', border: '2px solid #4caf7d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 20px', animation: 'none' }}>✓</div>
-              <h2 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 10 }}>Registered on <span style={{ color: '#4caf7d' }}>Bitcoin</span>.</h2>
-              <p style={{ fontSize: 15, color: '#8a8778', maxWidth: 360, margin: '0 auto 24px', lineHeight: 1.6 }}>Your name is now minted on Bitcoin L1 via the Orobit protocol. Settled, quantum-secure, forever yours.</p>
-              <div style={{ padding: 22, background: '#161614', border: '1px solid #4caf7d', borderRadius: 14, maxWidth: 340, margin: '0 auto 24px', display: 'inline-block' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 6 }}>{name}<span style={{ color: '#f7931a' }}>.btc</span></div>
-                <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#5a5850' }}>Block #874,291 · Taproot + NIST PQC · Owned by you</div>
+            <div className="text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-positive-green/10 border-2 border-positive-green flex items-center justify-center text-3xl mx-auto mb-5">✓</div>
+              <h2 className="text-[26px] font-semibold tracking-[-0.04em] mb-2 text-bn-text">Registered on <span className="text-positive-green">Bitcoin</span>.</h2>
+              <p className="text-[15px] text-bn-text-muted max-w-[340px] mx-auto mb-6 leading-relaxed">Your name is minted on Bitcoin L1 via the Orobit protocol. Settled, quantum-secure, forever yours.</p>
+              <div className="inline-block bg-bn-surface border border-positive-green/40 rounded-2xl px-7 py-5 mb-6">
+                <p className="text-[24px] font-semibold tracking-[-0.04em] text-bn-text mb-1" style={mono}>{name}<span className="text-bn-accent">.btc</span></p>
+                <p className="text-[11px] text-bn-text-dim" style={mono}>Block #874,291 · Taproot + NIST PQC · Owned by you</p>
               </div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <a href="/app/my-names" style={btnGhost}>View My Names</a>
-                <a href="/app/identity" style={btnAccent}>Set Up Identity →</a>
+              <div className="flex gap-3 justify-center">
+                <a href="/app/my-names" className="button button-secondary px-6 py-3 rounded-xl text-[13px]">View My Names</a>
+                <a href="/app/identity" className="button button-primary px-6 py-3 rounded-xl text-[13px]">Set Up Identity →</a>
               </div>
             </div>
           )}
@@ -207,8 +168,6 @@ export default function SearchPage() {
   )
 }
 
-const page: React.CSSProperties = { padding: 28, color: '#f0ede6' }
-const title: React.CSSProperties = { fontSize: 28, fontWeight: 800, letterSpacing: '-0.04em' }
-const flowCard: React.CSSProperties = { background: '#161614', border: '1px solid #2e2e2a', borderRadius: 14, padding: 24, marginBottom: 14 }
-const btnAccent: React.CSSProperties = { padding: '13px 22px', background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }
-const btnGhost: React.CSSProperties = { padding: '13px 18px', background: 'transparent', border: '1px solid #2e2e2a', borderRadius: 10, color: '#8a8778', cursor: 'pointer', fontSize: 13, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }
+export default function SearchPage() {
+  return <Suspense><SearchContent /></Suspense>
+}

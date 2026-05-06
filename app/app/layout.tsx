@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, ReactNode, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/lib/auth'
-import { useState } from 'react'
 
 const NAV = [
-  { id: 'home',        icon: '⌂', label: 'Home' },
+  { id: '',            icon: '⌂', label: 'Home' },
   { id: 'search',      icon: '⌕', label: 'Search Names' },
   { id: 'marketplace', icon: '◈', label: 'Marketplace', badge: '12' },
-  { id: 'my-names',    icon: '◉', label: 'My Names',    badge: '2' },
+  { id: 'my-names',    icon: '◉', label: 'My Names', badge: '2' },
   { id: 'identity',    icon: '◎', label: 'Identity & Records' },
   { id: 'activity',    icon: '⊞', label: 'Activity' },
 ]
@@ -18,9 +18,9 @@ const NAV = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [topSearch, setTopSearch] = useState('')
 
-  // Auth guard
   useEffect(() => {
     if (!user) router.replace('/login')
   }, [user, router])
@@ -34,88 +34,108 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }
 
+  const isActive = (id: string) => {
+    const target = id === '' ? '/app' : `/app/${id}`
+    return pathname === target
+  }
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'var(--sidebar-w) 1fr', gridTemplateRows: '56px 1fr', height: '100vh', background: '#0a0a08', fontFamily: 'Inter, sans-serif' }}>
-
-      {/* ── TOPBAR ── */}
-      <div style={{
-        gridColumn: '1 / -1', display: 'flex', alignItems: 'center',
-        padding: '0 20px', borderBottom: '1px solid #232320',
-        background: '#0a0a08', gap: 16, zIndex: 10,
-      }}>
-        <Link href="/app" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', marginRight: 4 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: '#f7931a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, color: '#fff' }}>BN</div>
-          <span style={{ fontWeight: 700, fontSize: 14, color: '#f0ede6' }}>Bitcoin Names</span>
-        </Link>
-
-        {/* Search bar */}
-        <div style={{ flex: 1, maxWidth: 380, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: '#161614', border: '1px solid #232320', borderRadius: 8 }}>
-          <span style={{ color: '#5a5850', fontSize: 13 }}>⌕</span>
-          <input
-            value={topSearch}
-            onChange={e => setTopSearch(e.target.value)}
-            onKeyDown={handleTopSearch}
-            placeholder="search names..."
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: 'monospace', fontSize: 13, color: '#f0ede6' }}
-          />
-          <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#f7931a' }}>.btc</span>
-        </div>
-
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ padding: '5px 12px', background: '#161614', border: '1px solid #2e2e2a', borderRadius: 7, fontFamily: 'monospace', fontSize: 12, color: '#8a8778', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4caf7d' }} />
-            {user.address.slice(0, 14)}...
-          </div>
-          <button onClick={() => { logout(); router.push('/login') }} style={{ padding: '5px 12px', background: 'transparent', border: '1px solid #232320', borderRadius: 7, color: '#5a5850', fontSize: 12, cursor: 'pointer' }}>
-            Log out
-          </button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-bn-bg text-bn-text overflow-hidden" style={{ fontFamily: 'var(--font-hubot-sans)' }}>
 
       {/* ── SIDEBAR ── */}
-      <div style={{ background: '#111110', borderRight: '1px solid #232320', padding: '14px 10px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px', marginBottom: 6 }}>Main</div>
-          {NAV.slice(0, 3).map(n => <NavItem key={n.id} item={n} />)}
-        </div>
-        <div>
-          <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px', marginBottom: 6 }}>My Identity</div>
-          {NAV.slice(3).map(n => <NavItem key={n.id} item={n} />)}
+      <aside className="w-[232px] shrink-0 border-r border-bn-border bg-bn-surface flex flex-col">
+        {/* Logo */}
+        <div className="h-14 flex items-center px-4 border-b border-bn-border">
+          <Link href="/app">
+            <Image src="/navbar_logo_dark.svg" alt="Bitcoin Names" width={120} height={30} className="h-7 w-auto" />
+          </Link>
         </div>
 
-        <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #232320' }}>
-          <Link href="/app/identity" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 8, textDecoration: 'none' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(247,147,26,0.12)', border: '1px solid rgba(247,147,26,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>₿</div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 500, color: '#f0ede6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.primaryName}</div>
-              <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850' }}>{user.address.slice(0, 16)}...</div>
+        {/* Nav */}
+        <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
+          <p className="text-[10px] font-medium text-bn-text-dim tracking-[0.1em] uppercase px-2 mb-1.5">Main</p>
+          {NAV.slice(0, 3).map(n => (
+            <NavItem key={n.id} n={n} active={isActive(n.id)} />
+          ))}
+          <p className="text-[10px] font-medium text-bn-text-dim tracking-[0.1em] uppercase px-2 mb-1.5 mt-4">My Identity</p>
+          {NAV.slice(3).map(n => (
+            <NavItem key={n.id} n={n} active={isActive(n.id)} />
+          ))}
+        </nav>
+
+        {/* Profile */}
+        <div className="px-2.5 py-3 border-t border-bn-border">
+          <Link href="/app/identity" className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-bn-surface-2 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-bn-accent/10 border border-bn-accent/20 flex items-center justify-center text-sm shrink-0 text-bn-accent font-semibold">
+              {user.username[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium text-bn-text truncate" style={{ fontFamily: 'var(--font-source-code-pro)' }}>{user.primaryName}</p>
+              <p className="text-[10px] text-bn-text-dim truncate" style={{ fontFamily: 'var(--font-source-code-pro)' }}>{user.address.slice(0, 18)}...</p>
             </div>
           </Link>
         </div>
-      </div>
+      </aside>
 
       {/* ── MAIN ── */}
-      <div style={{ overflow: 'auto', background: '#0a0a08' }}>
-        {children}
-      </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
 
+        {/* Topbar */}
+        <header className="h-14 shrink-0 border-b border-bn-border bg-bn-surface flex items-center gap-4 px-5">
+          {/* Search */}
+          <div className="flex-1 max-w-[380px] flex items-center gap-2 px-3.5 py-2 bg-bn-bg border border-bn-border rounded-xl focus-within:border-bn-accent/40 transition-colors">
+            <span className="text-bn-text-dim text-[13px]">⌕</span>
+            <input
+              value={topSearch}
+              onChange={e => setTopSearch(e.target.value)}
+              onKeyDown={handleTopSearch}
+              placeholder="search names..."
+              className="flex-1 bg-transparent border-none outline-none text-[13px] text-bn-text placeholder-bn-text-dim"
+              style={{ fontFamily: 'var(--font-source-code-pro)' }}
+            />
+            <span className="text-bn-accent text-[12px]" style={{ fontFamily: 'var(--font-source-code-pro)' }}>.btc</span>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2.5">
+            {/* Connected pill */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-bn-bg border border-bn-border rounded-full text-[12px] text-bn-text-muted" style={{ fontFamily: 'var(--font-source-code-pro)' }}>
+              <div className="w-1.5 h-1.5 rounded-full bg-positive-green" />
+              {user.address.slice(0, 12)}...
+            </div>
+            <button
+              onClick={() => { logout(); router.push('/login') }}
+              className="px-3 py-1.5 text-[12px] text-bn-text-dim border border-bn-border rounded-full hover:border-bn-border-mid hover:text-bn-text-muted transition-colors">
+              Log out
+            </button>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
 
-function NavItem({ item }: { item: typeof NAV[0] }) {
-  const router = useRouter()
+function NavItem({ n, active }: { n: typeof NAV[0]; active: boolean }) {
   return (
-    <Link href={`/app/${item.id === 'home' ? '' : item.id}`} style={{
-      display: 'flex', alignItems: 'center', gap: 9,
-      padding: '8px 10px', borderRadius: 8,
-      cursor: 'pointer', fontSize: 14, color: '#8a8778',
-      textDecoration: 'none', marginBottom: 2,
-    }}>
-      <span style={{ width: 20, textAlign: 'center', fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
-      <span style={{ flex: 1 }}>{item.label}</span>
-      {item.badge && (
-        <span style={{ padding: '1px 6px', background: 'rgba(247,147,26,0.12)', borderRadius: 100, fontFamily: 'monospace', fontSize: 10, color: '#f7931a' }}>{item.badge}</span>
+    <Link
+      href={n.id === '' ? '/app' : `/app/${n.id}`}
+      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 text-[14px] transition-colors relative ${
+        active
+          ? 'bg-bn-accent/8 text-bn-text border border-bn-accent/15'
+          : 'text-bn-text-muted hover:bg-bn-surface-2 hover:text-bn-text'
+      }`}
+    >
+      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-[55%] bg-bn-accent rounded-r" />}
+      <span className="w-5 text-center text-[15px] shrink-0">{n.icon}</span>
+      <span className="flex-1">{n.label}</span>
+      {n.badge && (
+        <span className="px-1.5 py-0.5 bg-bn-accent/10 rounded-full text-[10px] text-bn-accent" style={{ fontFamily: 'var(--font-source-code-pro)' }}>
+          {n.badge}
+        </span>
       )}
     </Link>
   )

@@ -1,83 +1,79 @@
 'use client'
-
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { MOCK_OWNED_NAMES } from '@/lib/mock-data'
+
+const mono = { fontFamily: 'var(--font-source-code-pro)' } as const
 
 export default function IdentityPage() {
   const { user } = useAuth()
   const [records, setRecords] = useState(MOCK_OWNED_NAMES[0].records)
   const [toast, setToast] = useState('')
-
   const save = () => { setToast('Records saved on-chain'); setTimeout(() => setToast(''), 3000) }
 
   const FIELDS = [
-    { icon: '₿', label: 'Wallet',    key: 'wallet',    ph: 'bc1q...' },
-    { icon: '⚡', label: 'Lightning', key: 'lightning', ph: 'yourname@lightning.node' },
-    { icon: '🌐', label: 'Site',      key: 'site',      ph: 'ipfs://... or https://...' },
-    { icon: '𝕏', label: 'Twitter',   key: 'twitter',   ph: '@handle' },
-    { icon: '📡', label: 'Nostr',     key: 'nostr',     ph: 'npub...' },
+    { icon:'₿', label:'Wallet',    key:'wallet',    ph:'bc1q...' },
+    { icon:'⚡', label:'Lightning', key:'lightning', ph:'yourname@lightning.node' },
+    { icon:'🌐', label:'Site',      key:'site',      ph:'ipfs://... or https://...' },
+    { icon:'𝕏', label:'Twitter',   key:'twitter',   ph:'@handle' },
+    { icon:'📡', label:'Nostr',     key:'nostr',     ph:'npub...' },
   ]
 
   return (
-    <div style={page}>
-      <div style={hdr}>
+    <div className="p-7">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 style={titleStyle}>Identity & Records</h1>
-          <p style={sub}>Manage your primary .btc name and what it resolves to.</p>
+          <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-bn-text">Identity & Records</h1>
+          <p className="text-[14px] text-bn-text-muted mt-1">Manage your primary .btc name and what it resolves to.</p>
         </div>
-        <button onClick={save} style={btnAccent}>Save changes</button>
+        <button onClick={save} className="button button-primary text-[13px] px-5 py-2.5 rounded-full">Save changes</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* Profile card */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <div style={{ ...card, marginBottom: 14, overflow: 'hidden' }}>
-            <div style={{ height: 72, background: 'linear-gradient(135deg, rgba(247,147,26,0.2), rgba(247,147,26,0.04))', borderBottom: '1px solid #232320', position: 'relative' }}>
-              <div style={{ position: 'absolute', bottom: -24, left: 22, width: 52, height: 52, borderRadius: 13, background: '#f7931a', border: '3px solid #111110', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 20, color: '#0a0a08' }}>
+          {/* Profile card */}
+          <div className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden mb-4">
+            <div className="h-[72px] border-b border-bn-border relative" style={{ background: 'linear-gradient(135deg, rgba(247,147,26,0.15), rgba(247,147,26,0.03))' }}>
+              <div className="absolute bottom-[-24px] left-5 w-12 h-12 rounded-[13px] bg-bn-accent border-[3px] border-bn-surface flex items-center justify-center text-[18px] font-bold text-bn-bg">
                 {user?.username[0].toUpperCase()}
               </div>
             </div>
-            <div style={{ padding: '34px 22px 22px' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 4 }}>
-                {user?.username}<span style={{ color: '#f7931a' }}>.btc</span>
+            <div className="px-5 pt-9 pb-5">
+              <p className="text-[20px] font-semibold tracking-[-0.04em] text-bn-text mb-1" style={mono}>{user?.username}<span className="text-bn-accent">.btc</span></p>
+              <div className="flex items-center gap-2 text-[11px] text-bn-text-dim mb-5" style={mono}>
+                <span>{user?.address}</span>
+                <button onClick={() => setToast('Copied')} className="hover:text-bn-text-muted">⎘</button>
               </div>
-              <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#5a5850', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                {user?.address}
-                <button onClick={() => setToast('Address copied')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5a5850', fontSize: 12 }}>⎘</button>
-              </div>
-              <div style={{ display: 'flex', gap: 24, padding: '14px 0', borderTop: '1px solid #232320', borderBottom: '1px solid #232320', marginBottom: 18 }}>
-                {[['2', 'Names'], ['5', 'Records'], ['874k', 'Block']].map(([v, l]) => (
-                  <div key={l} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.04em', color: '#f7931a' }}>{v}</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>{l}</div>
+              <div className="flex gap-6 py-3.5 border-y border-bn-border mb-4">
+                {[['2','Names'],['5','Records'],['874k','Block']].map(([v,l]) => (
+                  <div key={l} className="text-center">
+                    <p className="text-[18px] font-semibold tracking-[-0.04em] text-bn-accent">{v}</p>
+                    <p className="text-[10px] text-bn-text-dim uppercase tracking-[0.06em] mt-0.5" style={mono}>{l}</p>
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setToast('Share link copied')} style={{ ...btnGhost, flex: 1, justifyContent: 'center' }}>Share</button>
-                <button style={{ ...btnGhost, flex: 1, justifyContent: 'center' }}>Change Primary</button>
+              <div className="flex gap-2">
+                <button onClick={() => setToast('Copied')} className="button button-secondary flex-1 text-[12px] py-2 rounded-full">Share</button>
+                <button className="button button-secondary flex-1 text-[12px] py-2 rounded-full">Change Primary</button>
               </div>
             </div>
           </div>
 
           {/* Security */}
-          <div style={card}>
-            <div style={cardHdr}><span style={cardTitle}>Security</span></div>
-            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-bn-border"><span className="text-[13px] font-semibold text-bn-text">Security</span></div>
+            <div className="px-5 py-4 flex flex-col gap-4">
               {[
-                { label: 'Taproot Signature', sub: 'P2TR key-path spending enabled', active: true },
-                { label: 'NIST PQC', sub: 'CRYSTALS-Dilithium hybrid', active: true },
-                { label: 'Transfer Lock', sub: 'Prevent accidental transfer', active: false },
+                { label:'Taproot Signature', sub:'P2TR key-path spending enabled', active:true },
+                { label:'NIST PQC', sub:'CRYSTALS-Dilithium hybrid', active:true },
+                { label:'Transfer Lock', sub:'Prevent accidental transfer', active:false },
               ].map(s => (
-                <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div key={s.label} className="flex items-center justify-between">
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{s.label}</div>
-                    <div style={{ fontSize: 12, color: '#5a5850', marginTop: 2 }}>{s.sub}</div>
+                    <p className="text-[13px] font-medium text-bn-text">{s.label}</p>
+                    <p className="text-[12px] text-bn-text-dim mt-0.5">{s.sub}</p>
                   </div>
-                  <div style={{ fontFamily: 'monospace', fontSize: 11, color: s.active ? '#4caf7d' : '#5a5850' }}>
-                    {s.active ? '✓ Active' : '○ Off'}
-                  </div>
+                  <span className={`text-[11px] ${s.active ? 'text-positive-green' : 'text-bn-text-dim'}`} style={mono}>{s.active ? '✓ Active' : '○ Off'}</span>
                 </div>
               ))}
             </div>
@@ -85,20 +81,21 @@ export default function IdentityPage() {
         </div>
 
         {/* Records editor */}
-        <div style={card}>
-          <div style={cardHdr}><span style={cardTitle}>Records</span><button style={{ background: 'none', border: 'none', color: '#f7931a', cursor: 'pointer', fontSize: 12 }}>Edit all</button></div>
-          <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="bg-bn-surface border border-bn-border rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-bn-border">
+            <span className="text-[13px] font-semibold text-bn-text">Records</span>
+            <button className="text-[12px] text-bn-accent hover:text-bn-accent-hover">Edit all</button>
+          </div>
+          <div className="p-4 flex flex-col gap-2">
             {FIELDS.map(f => (
-              <div key={f.key} style={{ display: 'flex', alignItems: 'center', background: '#0a0a08', border: '1px solid #232320', borderRadius: 9, overflow: 'hidden' }}>
-                <div style={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, borderRight: '1px solid #232320', flexShrink: 0 }}>{f.icon}</div>
-                <div style={{ width: 76, padding: '0 10px', fontFamily: 'monospace', fontSize: 10, color: '#5a5850', textTransform: 'uppercase', letterSpacing: '0.06em', borderRight: '1px solid #232320', flexShrink: 0 }}>{f.label}</div>
-                <input
-                  value={(records as any)[f.key] || ''}
-                  onChange={e => setRecords(r => ({ ...r, [f.key]: e.target.value }))}
+              <div key={f.key} className="flex items-center bg-bn-bg border border-bn-border rounded-xl overflow-hidden">
+                <div className="w-11 h-11 flex items-center justify-center text-base border-r border-bn-border shrink-0">{f.icon}</div>
+                <div className="w-20 px-3 text-[10px] text-bn-text-dim uppercase tracking-[0.06em] border-r border-bn-border shrink-0" style={mono}>{f.label}</div>
+                <input value={(records as any)[f.key] || ''} onChange={e => setRecords(r => ({...r,[f.key]:e.target.value}))}
                   placeholder={f.ph}
-                  style={{ flex: 1, padding: '11px 12px', background: 'none', border: 'none', outline: 'none', fontFamily: 'monospace', fontSize: 12, color: '#f0ede6' }}
-                />
-                <div style={{ padding: '0 12px', fontSize: 13, color: (records as any)[f.key] ? '#4caf7d' : '#3a3a38' }}>
+                  className="flex-1 px-3 py-2.5 bg-transparent border-none outline-none text-[12px] text-bn-text placeholder-bn-text-dim"
+                  style={mono} />
+                <div className={`px-3 text-[13px] ${(records as any)[f.key] ? 'text-positive-green' : 'text-bn-border-light'}`}>
                   {(records as any)[f.key] ? '✓' : '○'}
                 </div>
               </div>
@@ -107,21 +104,7 @@ export default function IdentityPage() {
         </div>
       </div>
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, padding: '12px 20px', background: '#161614', border: '1px solid rgba(76,175,125,0.3)', borderRadius: 10, fontSize: 13, color: '#f0ede6', display: 'flex', gap: 8, zIndex: 200 }}>
-          <span style={{ color: '#4caf7d' }}>✓</span> {toast}
-        </div>
-      )}
+      {toast && <div className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-bn-surface border border-positive-green/30 rounded-xl text-[13px] text-bn-text z-50"><span className="text-positive-green">✓</span> {toast}</div>}
     </div>
   )
 }
-
-const page: React.CSSProperties = { padding: 28, color: '#f0ede6' }
-const hdr: React.CSSProperties  = { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }
-const titleStyle: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em' }
-const sub: React.CSSProperties  = { fontSize: 14, color: '#8a8778', marginTop: 4 }
-const card: React.CSSProperties = { background: '#111110', border: '1px solid #232320', borderRadius: 14 }
-const cardHdr: React.CSSProperties  = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #232320' }
-const cardTitle: React.CSSProperties = { fontWeight: 700, fontSize: 13 }
-const btnAccent: React.CSSProperties = { padding: '9px 18px', background: '#f7931a', color: '#0a0a08', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }
-const btnGhost: React.CSSProperties  = { padding: '7px 12px', background: 'transparent', border: '1px solid #232320', borderRadius: 7, color: '#8a8778', cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center' }
