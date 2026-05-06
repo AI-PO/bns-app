@@ -82,7 +82,7 @@ export default function AppHome() {
       </div>
 
       {/* Onboarding */}
-      {showOnboarding && current && !('isFinal' in current) && (
+      {showOnboarding && current && typeof current === 'object' && !('isFinal' in current) && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
